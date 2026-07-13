@@ -1,0 +1,81 @@
+name: Publish
+
+# Publishes to public npmjs with SLSA provenance on tag push, and creates a
+# GitHub Release from the tag's annotated message. Triggered by pushing a
+# semver tag (v0.1.0, v0.1.1, …). The tag must match package.json exactly.
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+# id-token: write is REQUIRED for `npm publish --provenance`.
+# contents: write is required to create the GitHub Release.
+permissions:
+  id-token: write
+  contents: write
+
+jobs:
+  publish:
+    name: Publish to npm + GitHub Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+
+      - name: Verify tag matches package.json version
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match package.json version $PKG_VERSION"
+            exit 1
+          fi
+          echo "Tag $GITHUB_REF_NAME matches package.json version $PKG_VERSION"
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm test
+
+      - name: Verify tarball contents
+        run: |
+          echo "Files that will ship:"
+          npm pack --dry-run 2>&1 | grep -E "npm notice [0-9]" | head -30
+          echo "..."
+          npm pack --dry-run 2>&1 | tail -5
+
+      - name: Publish to npm with provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --provenance --access public
+
+      - name: Create GitHub Release from tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG_MSG=$(git tag -l --format='%(contents)' "$GITHUB_REF_NAME")
+          if [ -z "$TAG_MSG" ]; then
+            gh release create "$GITHUB_REF_NAME" --generate-notes
+          else
+            gh release create "$GITHUB_REF_NAME" \
+              --title "$GITHUB_REF_NAME" \
+              --notes "$TAG_MSG"
+          fi

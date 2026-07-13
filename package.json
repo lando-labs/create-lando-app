@@ -1,0 +1,46 @@
+{
+  "name": "create-lando-app",
+  "version": "0.1.0",
+  "description": "Scaffold a Next.js app pre-wired with the Lando Labs Design System.",
+  "type": "module",
+  "bin": {
+    "create-lando-app": "./dist/index.js"
+  },
+  "files": [
+    "dist/",
+    "templates/",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc && chmod +x dist/index.js",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "echo \"(no tests yet — smoke test lands with the DS public-npm gate)\" && exit 0"
+  },
+  "keywords": [
+    "create-lando-app",
+    "lando-labs",
+    "design-system",
+    "next",
+    "scaffold",
+    "starter"
+  ],
+  "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true,
+    "registry": "https://registry.npmjs.org/"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  }
+}

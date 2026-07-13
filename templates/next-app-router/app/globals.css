@@ -1,0 +1,37 @@
+/*
+ * Golden-path global CSS for @lando-labs/design-system alongside a CSS reset
+ * (issue #462).
+ *
+ * The DS ships all component CSS inside cascade layers (ll.reset … ll.utilities).
+ * Per the cascade, an UNLAYERED rule beats every layer — which is what lets your
+ * overrides win with no `!important`, but ALSO means an unlayered reset like
+ * `* { margin: 0; padding: 0 }` would zero out the padding/margins of every DS
+ * component.
+ *
+ * The fix: `app/layout.tsx` imports `@lando-labs/design-system/layer-order.css`
+ * BEFORE this file. That primer declares:
+ *
+ *   @layer app-reset, ll.reset, ll.tokens, ll.base, ll.components, ll.utilities, app;
+ *
+ * so `app-reset` is the LOWEST-priority layer. The reset below lives there and
+ * no longer clobbers DS component spacing. Put deliberate overrides that should
+ * beat DS components in `@layer app`.
+ *
+ * Resulting precedence (low → high):
+ *   app-reset < ll.reset < ll.tokens < ll.base < ll.components < ll.utilities
+ *             < app < your unlayered CSS
+ */
+
+@layer app-reset {
+  *,
+  *::before,
+  *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+}
+
+@layer app {
+  /* Your app-level overrides go here. */
+}

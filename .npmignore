@@ -1,0 +1,16 @@
+# Belt-and-suspenders to the package.json `files` allowlist.
+# `files` already constrains what ships; this keeps `npm pack --dry-run` clean.
+
+# Source — only dist/ and templates/ ship.
+src/
+
+# Configs & CI
+.github/
+.claude/
+tsconfig*.json
+*.tsbuildinfo
+
+# Dev artifacts
+*.log
+*.tgz
+.DS_Store
