@@ -59,7 +59,7 @@ must be updated in lockstep. That's what the drift mechanism (below) guards.
 The DS is the source of truth for the layer contract, but this repo owns the
 templates. To keep them in sync **without** manual vigilance: when the DS
 publishes a new version, its release workflow dispatches to this repo, which
-opens a PR to bump `DS_VERSION` (the constant at the top of `src/index.ts`) and
+opens a PR to bump `DS_VERSION` (the constant in `src/scaffold.ts`) and
 re-run a **consumer smoke test** (scaffold the template against the new DS
 tarball → build → assert component spacing is intact). A plain version bump
 can't catch a layer-contract break; the smoke test is the real guard.
