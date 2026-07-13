@@ -20,7 +20,8 @@
     "build": "tsc && chmod +x dist/index.js",
     "dev": "tsc --watch",
     "typecheck": "tsc --noEmit",
-    "test": "echo \"(no tests yet — smoke test lands with the DS public-npm gate)\" && exit 0"
+    "pretest": "npm run build",
+    "test": "node scripts/smoke.mjs"
   },
   "keywords": [
     "create-lando-app",

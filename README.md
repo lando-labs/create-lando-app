@@ -39,7 +39,7 @@ npm run dev     # tsc --watch
 ```
 
 Templates live in `templates/`. The `@lando-labs/design-system` version the
-templates pin is the `DS_VERSION` constant in `src/index.ts`. A CI job opens a
+templates pin is the `DS_VERSION` constant in `src/scaffold.ts`. A CI job opens a
 PR to bump it — and re-run the consumer smoke test — whenever the DS publishes
 a new release, so the scaffold never drifts from the DS's cascade-layer
 contract.
