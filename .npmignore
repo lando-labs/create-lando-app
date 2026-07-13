@@ -1,8 +1,9 @@
 # Belt-and-suspenders to the package.json `files` allowlist.
 # `files` already constrains what ships; this keeps `npm pack --dry-run` clean.
 
-# Source — only dist/ and templates/ ship.
+# Source & dev scripts — only dist/ and templates/ ship.
 src/
+scripts/
 
 # Configs & CI
 .github/
