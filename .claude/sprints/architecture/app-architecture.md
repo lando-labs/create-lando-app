@@ -15,9 +15,10 @@ it is the **top of the acquisition funnel** for the eventual paid MCP product.
 | --- | --- | --- |
 | **CLI** | `src/index.ts` | Prompts, package-manager detection, template copy, placeholder substitution, optional install, optional `.mcp.json` drop-in. Holds the `DS_VERSION` constant. |
 | **Templates** | `templates/next-app-router/**` | The scaffolded app. Encodes the #462 cascade-layer golden path. `_gitignore` renamed to `.gitignore` on copy. Placeholders: `{{PROJECT_NAME}}`, `{{DS_VERSION}}`. |
-| **Test / smoke harness** | `scripts/smoke.ts` *(not built)*, `npm test` | Consumer smoke test: scaffold → install DS → build → assert #462 spacing invariant. The real drift guard. |
+| **Scaffold module** | `src/scaffold.ts` | Shared copy/rename/substitute/`.mcp.json` logic + the `DS_VERSION` constant. Imported by both the CLI and the smoke test so the guard can't drift from what ships. |
+| **Test / smoke harness** | `scripts/smoke.mjs`, `npm test` | ✅ built. Consumer smoke test: scaffold (via `dist/scaffold.js`) → install DS → `next build` → assert `app-reset` is the lowest cascade layer. Dormant-safe (skips + exit 0 until the DS is resolvable). |
 | **CI / release** | `.github/workflows/{test,publish}.yml` | Typecheck/build/test on PR; tag-push publish to public npm (provenance) + GitHub Release. |
-| **Drift automation** | *(not built)* receiver workflow | `repository_dispatch` handler that opens a `DS_VERSION`-bump PR when the DS publishes. Sibling dispatcher lives in the DS repo. |
+| **Drift automation** | `.github/workflows/ds-drift.yml` | ✅ built (receiver). `repository_dispatch(ds-published)` / `workflow_dispatch` → bump `DS_VERSION` → open a PR that runs the smoke test. Sibling dispatcher (DS repo) still pending. |
 
 ## The load-bearing invariant: the #462 cascade-layer contract
 
@@ -48,3 +49,6 @@ publish. Sprint planning is organized around this gate.
 ## Update Log
 
 - 2026-07-12 — Initial creation during repo/GitHub setup + first sprint plan.
+- 2026-07-12 — Sprint 1 (PR #8): added the `src/scaffold.ts` shared module; the
+  smoke harness (`scripts/smoke.mjs`) and drift receiver (`ds-drift.yml`) are now
+  built (dormant until A1). `DS_VERSION` moved from `src/index.ts` → `src/scaffold.ts`.
