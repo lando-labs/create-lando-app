@@ -13,7 +13,7 @@ Open [http://localhost:3000](http://localhost:3000) and edit `app/page.tsx`.
 
 ## What's wired up
 
-- **`@lando-labs/design-system`** — components, design tokens, dark mode.
+- **`@lando-labs/lando-ds`** — components, design tokens, dark mode.
 - **Golden-path CSS order** (`app/layout.tsx`) — the cascade-layer primer plus
   an `@layer app-reset` reset, so a CSS reset never zeroes out DS component
   spacing (issue #462).

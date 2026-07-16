@@ -8,7 +8,7 @@
     "start": "next start"
   },
   "dependencies": {
-    "@lando-labs/design-system": "{{DS_VERSION}}",
+    "@lando-labs/lando-ds": "{{DS_VERSION}}",
     "lucide-react": "^0.548.0",
     "next": "^15.3.3",
     "react": "^19.1.0",

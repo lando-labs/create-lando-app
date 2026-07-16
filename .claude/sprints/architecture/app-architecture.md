@@ -6,7 +6,7 @@
 
 `create-lando-app` is the free CLI scaffold for the Lando Labs Design System.
 `npm create lando-app@latest` (≡ `npx create-lando-app`) generates a Next.js
-App Router project already wired to `@lando-labs/design-system`. Strategically
+App Router project already wired to `@lando-labs/lando-ds`. Strategically
 it is the **top of the acquisition funnel** for the eventual paid MCP product.
 
 ## Feature areas (issue-grouping buckets)
@@ -25,9 +25,9 @@ it is the **top of the acquisition funnel** for the eventual paid MCP product.
 The Next template's CSS wiring (`app/layout.tsx` + `app/globals.css`) is the
 whole point of the product. Import order MUST be:
 
-1. `@lando-labs/design-system/layer-order.css` (declares layer order first)
+1. `@lando-labs/lando-ds/layer-order.css` (declares layer order first)
 2. `./globals.css` (app reset lives in `@layer app-reset`, the lowest layer)
-3. `@lando-labs/design-system/styles`
+3. `@lando-labs/lando-ds/styles`
 
 If the DS changes its layer names/order or CSS entry points, this template must
 change in lockstep. The smoke test is what guards this automatically.
@@ -39,12 +39,15 @@ change in lockstep. The smoke test is what guards this automatically.
 | `next-app-router` | ✅ built (v1) |
 | `vite-react` (SPA) | planned — needs `themeScript()` hand-inlined into `index.html`, care around bundler CSS-import order |
 
-## The A1 gate (dominant constraint)
+## Dependency status (was: the A1 gate)
 
-Nothing a scaffolded app does works until `@lando-labs/design-system` is on
-**public npm** (the "A1" launch, owned by the DS repo's go-live runbook). Until
-then: no real `npm install` in the generated app, no live smoke test, no
-publish. Sprint planning is organized around this gate.
+- ✅ **DS is public** — `@lando-labs/lando-ds@0.57.0` on npm. The old "A1 gate"
+  (which blocked everything on the DS going public) is **resolved**. The DS
+  shipped under a new name; `@lando-labs/design-system` never published.
+  The smoke test now runs live against public npm.
+- ⏳ **MCP not yet published** — locally `@lando-labs/design-system-mcp` v3.3.0,
+  mid-rename. The scaffolded `.mcp.json` and the agent's MCP-first loop stay
+  inert for external users until it publishes (#16). Everything else works.
 
 ## Update Log
 

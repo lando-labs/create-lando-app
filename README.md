@@ -16,7 +16,7 @@ fetch and run this package.
 
 A Next.js App Router project with:
 
-- `@lando-labs/design-system` installed and imported
+- `@lando-labs/lando-ds` installed and imported
 - The **golden-path CSS order** that keeps a CSS reset from zeroing out DS
   component spacing (issue #462)
 - **Anti-flash** theme application via `themeScript()` in the server `<head>`
@@ -38,7 +38,7 @@ npm run build   # compiles src/ → dist/
 npm run dev     # tsc --watch
 ```
 
-Templates live in `templates/`. The `@lando-labs/design-system` version the
+Templates live in `templates/`. The `@lando-labs/lando-ds` version the
 templates pin is the `DS_VERSION` constant in `src/scaffold.ts`. A CI job opens a
 PR to bump it — and re-run the consumer smoke test — whenever the DS publishes
 a new release, so the scaffold never drifts from the DS's cascade-layer

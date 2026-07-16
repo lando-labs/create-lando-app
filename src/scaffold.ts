@@ -11,11 +11,19 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 
 /**
- * The `@lando-labs/design-system` version the scaffolded template pins.
+ * The `@lando-labs/lando-ds` version the scaffolded template pins.
  * Bumped by the DS-publish drift PR (CI), which also re-runs the consumer
  * smoke test to guard the #462 cascade-layer contract.
  */
-export const DS_VERSION = '^0.50.0'
+export const DS_VERSION = '^0.57.0'
+
+/**
+ * The Lando DS MCP server package the `.mcp.json` drop-in points at.
+ *
+ * TODO(#16): not yet published to npm. The MCP is mid-rename alongside the DS
+ * (locally still `@lando-labs/design-system-mcp`), so this name is provisional
+ * until the MCP publishes. The scaffolded `.mcp.json` won't resolve until then.
+ */
 export const MCP_PACKAGE = '@lando-labs/design-system-mcp@latest'
 
 /** Recursively replace `{{KEY}}` tokens in every text file under `dir`. */

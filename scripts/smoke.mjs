@@ -6,17 +6,18 @@
  * scaffold → install → build → assert can. This does exactly that, reusing the
  * SAME scaffold code path the CLI ships (`dist/scaffold.js`).
  *
- * DORMANT until the DS is installable (the A1 gate). If `@lando-labs/design-system`
- * can't be resolved from npm and no local tarball is provided, it SKIPS cleanly
- * and exits 0 so CI stays green pre-launch.
+ * `@lando-labs/lando-ds` is published, so this normally runs LIVE against public
+ * npm. If the DS can't be resolved (offline CI, registry outage) and no local
+ * tarball is provided, it SKIPS cleanly and exits 0 rather than failing the build
+ * on an unrelated network problem.
  *
  * Written as plain ESM (not .ts) so it runs on the CI's Node 20 with zero extra
  * toolchain, and so it exercises the compiled artifact the package actually ships.
  *
  * DS source resolution (in priority order):
- *   1. LANDO_DS_TARBALL=/abs/path/to/lando-labs-design-system-x.y.z.tgz
- *      → installs via `file:` spec (use before A1, against a DS `npm pack`).
- *   2. Otherwise probe public npm for @lando-labs/design-system; if absent, SKIP.
+ *   1. LANDO_DS_TARBALL=/abs/path/to/lando-labs-lando-ds-x.y.z.tgz
+ *      → installs via `file:` spec (test against an unreleased local DS build).
+ *   2. Otherwise resolve @lando-labs/lando-ds from public npm.
  */
 import { mkdtemp, rm, readFile, access } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -32,10 +33,9 @@ function log(msg) {
   console.log(`  ${msg}`)
 }
 function skip(reason) {
-  console.log(`\n⏭  SMOKE TEST SKIPPED (dormant): ${reason}`)
-  console.log('   The #462 guard activates once the DS is installable (A1 gate).')
-  console.log('   To run it now against a local DS build:')
-  console.log('     LANDO_DS_TARBALL=/path/to/design-system.tgz npm test')
+  console.log(`\n⏭  SMOKE TEST SKIPPED: ${reason}`)
+  console.log('   The #462 guard needs an installable DS. To run against a local build:')
+  console.log('     LANDO_DS_TARBALL=/path/to/lando-ds.tgz npm test')
   process.exit(0)
 }
 function fail(msg) {
@@ -65,17 +65,17 @@ if (tarball) {
 } else {
   const probe = spawnSync(
     'npm',
-    ['view', '@lando-labs/design-system', 'version'],
+    ['view', '@lando-labs/lando-ds', 'version'],
     { encoding: 'utf8' },
   )
   if (probe.status !== 0) {
-    skip('@lando-labs/design-system is not on public npm yet and no LANDO_DS_TARBALL set')
+    skip('@lando-labs/lando-ds could not be resolved from npm (offline?) and no LANDO_DS_TARBALL set')
   }
   dsSpec = DS_VERSION
   log(`DS source: public npm (${dsSpec})`)
 }
 
-// ---- Live path (A1+): scaffold → install → build → assert ----
+// ---- Live path: scaffold → install → build → assert ----
 const workdir = await mkdtemp(join(tmpdir(), 'cla-smoke-'))
 const projectDir = join(workdir, 'smoke-app')
 
@@ -99,7 +99,7 @@ try {
   if (install.status !== 0) fail('npm install failed in the scaffolded app')
 
   // `next build` succeeding is itself a strong contract check: it proves the
-  // template's imports — `@lando-labs/design-system/layer-order.css`,
+  // template's imports — `@lando-labs/lando-ds/layer-order.css`,
   // `/styles`, `themeScript()`, and the deep component subpaths — all still
   // resolve and compile against this DS version. An entry-point rename/removal
   // breaks the build here.
@@ -127,7 +127,7 @@ try {
  */
 async function assertLayerOrder(projectDir) {
   log('Asserting #462 layer order (app-reset must be lowest) …')
-  const dsDir = join(projectDir, 'node_modules', '@lando-labs', 'design-system')
+  const dsDir = join(projectDir, 'node_modules', '@lando-labs', 'lando-ds')
 
   let pkg
   try {

@@ -3,13 +3,13 @@
 // Server-safe DS leaves are imported from their per-module subpaths (the
 // `./components/*` deep export, #276) so the bundler ships only the modules
 // this page actually renders — not the entire client surface behind the barrel.
-import { PageHeader } from '@lando-labs/design-system/components/PageHeader/PageHeader'
-import { Card } from '@lando-labs/design-system/components/Card/Card'
-import { CardHeader } from '@lando-labs/design-system/components/Card/CardHeader'
-import { CardBody } from '@lando-labs/design-system/components/Card/CardBody'
-import { CardTitle } from '@lando-labs/design-system/components/Card/CardTitle'
-import { Badge } from '@lando-labs/design-system/components/Badge/Badge'
-import { Button } from '@lando-labs/design-system/components/Button/Button'
+import { PageHeader } from '@lando-labs/lando-ds/components/PageHeader/PageHeader'
+import { Card } from '@lando-labs/lando-ds/components/Card/Card'
+import { CardHeader } from '@lando-labs/lando-ds/components/Card/CardHeader'
+import { CardBody } from '@lando-labs/lando-ds/components/Card/CardBody'
+import { CardTitle } from '@lando-labs/lando-ds/components/Card/CardTitle'
+import { Badge } from '@lando-labs/lando-ds/components/Badge/Badge'
+import { Button } from '@lando-labs/lando-ds/components/Button/Button'
 
 export default function HomePage() {
   return (

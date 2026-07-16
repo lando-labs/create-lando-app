@@ -89,7 +89,7 @@ Verification run:
 1. **A1 gate — DS isn't on public npm yet.** It's still on private GitHub
    Packages; public launch has a go-live runbook in the DS repo
    (`reference/public-launch/go-live-checklist.md`). Until then, a scaffolded
-   app's `npm install` won't resolve `@lando-labs/design-system` from public
+   app's `npm install` won't resolve `@lando-labs/lando-ds` from public
    npm. This is exactly the dependency #368 names ("after A1 + A6").
 2. **`npm test` is a placeholder.** The real consumer smoke test needs the DS on
    public npm too, so it lands with A1.

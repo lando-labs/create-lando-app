@@ -15,8 +15,8 @@
 
 ## Scaffolded app stack (the template ships these)
 
-Next.js ^15.3, React ^19.1, `@lando-labs/design-system` (`{{DS_VERSION}}` →
-`^0.50.0`), `lucide-react`, TypeScript. `transpilePackages: ['@lando-labs/design-system']`
+Next.js ^15.3, React ^19.1, `@lando-labs/lando-ds` (`{{DS_VERSION}}` →
+`^0.57.0`), `lucide-react`, TypeScript. `transpilePackages: ['@lando-labs/lando-ds']`
 in `next.config.ts` enables RSC boundary checking for deep component imports.
 
 ## Package shipping contract
@@ -38,18 +38,19 @@ via `npm pack --dry-run`.
 ```
 npm run typecheck   # tsc --noEmit
 npm run build       # tsc → dist/
-npm test            # placeholder until smoke test lands (skip=lint,e2e)
+npm test            # consumer smoke test: scaffold → install → build → #462 assert
 ```
 
 `lint` and `e2e` are intentionally skipped (none configured for a CLI of this
-size). `blockOnMissing: false` because `npm test` is a placeholder pre-A1.
+size). `npm test` runs live against the published DS; it skips cleanly (exit 0)
+only if the DS can't be resolved (offline) and no `LANDO_DS_TARBALL` is set.
 
 ## Sibling repos (not in this repo)
 
 | Repo | Package | Relationship |
 | --- | --- | --- |
-| `lando-labs-design-system` | `@lando-labs/design-system` | Source of truth for the #462 layer contract; the A1-gate owner. |
-| `lando-ds-mcp` | `@lando-labs/design-system-mcp` | Conventions modeled on it; the MCP the `.mcp.json` drop-in wires up. |
+| `lando-ds` | `@lando-labs/lando-ds` | Source of truth for the #462 layer contract. Public on npm (0.57.0). |
+| `lando-ds-mcp` | `@lando-labs/design-system-mcp` | Conventions modeled on it; the MCP the `.mcp.json` drop-in wires up. Not yet published (#16). |
 
 ## Update Log
 
