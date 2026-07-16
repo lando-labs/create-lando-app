@@ -11,12 +11,24 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 
 /**
- * The `@lando-labs/design-system` version the scaffolded template pins.
+ * The `@lando-labs/lando-ds` version the scaffolded template pins.
  * Bumped by the DS-publish drift PR (CI), which also re-runs the consumer
  * smoke test to guard the #462 cascade-layer contract.
  */
-export const DS_VERSION = '^0.50.0'
-export const MCP_PACKAGE = '@lando-labs/design-system-mcp@latest'
+export const DS_VERSION = '^0.57.0'
+
+/**
+ * The Lando DS MCP server package the `.mcp.json` drop-in points at.
+ * `@latest` is deliberate: it stops `npx` from reusing a stale cached copy.
+ */
+export const MCP_PACKAGE = '@lando-labs/lando-ds-mcp@latest'
+
+/**
+ * The mcpServers key the DS MCP documents for client configs. This is what
+ * namespaces the tools the agent sees (`mcp__lando-ds__*`), so it must match
+ * the MCP's own README.
+ */
+export const MCP_SERVER_KEY = 'lando-ds'
 
 /** Recursively replace `{{KEY}}` tokens in every text file under `dir`. */
 export async function substitutePlaceholders(
@@ -91,7 +103,7 @@ export async function scaffold(opts: ScaffoldOptions): Promise<void> {
   if (mcp) {
     const mcpConfig = {
       mcpServers: {
-        'lando-design-system': { command: 'npx', args: ['-y', MCP_PACKAGE] },
+        [MCP_SERVER_KEY]: { command: 'npx', args: ['-y', MCP_PACKAGE] },
       },
     }
     await writeFile(

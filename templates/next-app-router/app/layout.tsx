@@ -3,14 +3,14 @@
 // 1. Layer-order primer: declares the cascade-layer order up front, so the
 //    reset in globals.css can sit BELOW the DS layers instead of clobbering
 //    component spacing.
-import '@lando-labs/design-system/layer-order.css'
+import '@lando-labs/lando-ds/layer-order.css'
 // 2. Your global CSS (an aggressive reset bucketed into @layer app-reset).
 import './globals.css'
 // 3. The DS component styles (all inside the ll.* layers).
-import '@lando-labs/design-system/styles'
+import '@lando-labs/lando-ds/styles'
 
 import type { Metadata } from 'next'
-import { themeScript } from '@lando-labs/design-system'
+import { themeScript } from '@lando-labs/lando-ds'
 import { Providers } from './providers'
 
 export const metadata: Metadata = {

@@ -1,5 +1,5 @@
 /*
- * Golden-path global CSS for @lando-labs/design-system alongside a CSS reset
+ * Golden-path global CSS for @lando-labs/lando-ds alongside a CSS reset
  * (issue #462).
  *
  * The DS ships all component CSS inside cascade layers (ll.reset … ll.utilities).
@@ -8,7 +8,7 @@
  * `* { margin: 0; padding: 0 }` would zero out the padding/margins of every DS
  * component.
  *
- * The fix: `app/layout.tsx` imports `@lando-labs/design-system/layer-order.css`
+ * The fix: `app/layout.tsx` imports `@lando-labs/lando-ds/layer-order.css`
  * BEFORE this file. That primer declares:
  *
  *   @layer app-reset, ll.reset, ll.tokens, ll.base, ll.components, ll.utilities, app;

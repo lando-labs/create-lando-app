@@ -1,6 +1,6 @@
 'use client'
 
-import { ThemeProvider } from '@lando-labs/design-system'
+import { ThemeProvider } from '@lando-labs/lando-ds'
 
 // Global CSS is imported once, in `app/layout.tsx`, in the golden-path order
 // (layer-order primer → globals → DS styles). Don't re-import it here.

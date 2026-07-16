@@ -5,7 +5,7 @@
 `create-lando-app` is the free CLI scaffold for the Lando Labs Design System —
 `npm create lando-app@latest` (equivalently `npx create-lando-app`) generates a
 Next.js App Router project that's already correctly wired to
-`@lando-labs/design-system`.
+`@lando-labs/lando-ds`.
 
 Strategically it's the **top of the acquisition funnel** (issue #368, epic #298
 in the design-system repo): lower the time-to-first-render, and optionally drop
@@ -20,8 +20,8 @@ monorepo package. It publishes to public npm on its own release pipeline.
 
 | Repo (local dir) | npm package | Role |
 | --- | --- | --- |
-| `~/lando-labs/lando-labs-design-system` | `@lando-labs/design-system` | The component library. Source of truth for the cascade-layer contract. |
-| `~/lando-labs/lando-ds-mcp` | `@lando-labs/design-system-mcp` | The MCP server. This repo's conventions (build, CI, publish) were modeled on it. |
+| `~/lando-labs/lando-ds` | `@lando-labs/lando-ds` | The component library. Source of truth for the cascade-layer contract. **Public on npm** (0.57.0). (`~/lando-labs/lando-labs-design-system` is the stale pre-rename checkout.) |
+| `~/lando-labs/lando-ds-mcp` | `@lando-labs/lando-ds-mcp` | The MCP server. This repo's conventions (build, CI, publish) were modeled on it. **Public on npm** (4.0.0). The scaffolded `.mcp.json` wires it as server key `lando-ds`. |
 | `~/lando-labs/create-lando-app` *(this repo)* | `create-lando-app` | The scaffold CLI. |
 
 ## Repo layout
@@ -44,12 +44,12 @@ templates/next-app-router/         The one template (v1). Copied verbatim,
 The Next template's CSS wiring (`app/layout.tsx` + `app/globals.css`) encodes
 the DS's "golden path" for coexisting with a CSS reset (DS issue #462):
 
-1. `@lando-labs/design-system/layer-order.css` is imported **first** — it
+1. `@lando-labs/lando-ds/layer-order.css` is imported **first** — it
    declares the cascade-layer order so an app reset can sit *below* the DS
    layers.
 2. The app reset lives in `@layer app-reset` (the lowest layer), so it can't
    zero out DS component spacing.
-3. Then `@lando-labs/design-system/styles`.
+3. Then `@lando-labs/lando-ds/styles`.
 
 If the DS ever changes its layer names/order or CSS entry points, this template
 must be updated in lockstep. That's what the drift mechanism (below) guards.
@@ -64,8 +64,9 @@ re-run a **consumer smoke test** (scaffold the template against the new DS
 tarball → build → assert component spacing is intact). A plain version bump
 can't catch a layer-contract break; the smoke test is the real guard.
 
-> Status: the dispatch step (DS side) and the smoke test (this side) are **not
-> built yet** — both are gated on the DS going public on npm. See HANDOVER.md.
+> Status: the **smoke test** (`scripts/smoke.mjs`) and the **drift receiver**
+> (`.github/workflows/ds-drift.yml`) are built and live. The DS-side dispatch step
+> is still pending in the DS repo.
 
 ## Dev commands
 
@@ -74,11 +75,18 @@ npm install
 npm run build      # tsc → dist/, then chmod +x dist/index.js
 npm run dev        # tsc --watch
 npm run typecheck  # tsc --noEmit
-npm test           # placeholder until the smoke test lands (A1 gate)
+npm test           # consumer smoke test (scaffold → install → build → #462 assert)
 ```
 
-**Test a scaffold locally** (the generated app can't `npm install` until the DS
-is on public npm — see the A1 gate in HANDOVER.md):
+`npm test` runs live against the published DS. To test against an unreleased
+local DS build instead:
+
+```bash
+# in ~/lando-labs/lando-ds:  npm pack --ignore-scripts
+LANDO_DS_TARBALL=/abs/path/to/lando-labs-lando-ds-0.57.0.tgz npm test
+```
+
+**Test a scaffold locally:**
 
 ```bash
 npm run build
