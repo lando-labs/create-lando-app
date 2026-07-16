@@ -50,7 +50,7 @@ only if the DS can't be resolved (offline) and no `LANDO_DS_TARBALL` is set.
 | Repo | Package | Relationship |
 | --- | --- | --- |
 | `lando-ds` | `@lando-labs/lando-ds` | Source of truth for the #462 layer contract. Public on npm (0.57.0). |
-| `lando-ds-mcp` | `@lando-labs/design-system-mcp` | Conventions modeled on it; the MCP the `.mcp.json` drop-in wires up. Not yet published (#16). |
+| `lando-ds-mcp` | `@lando-labs/lando-ds-mcp` | Conventions modeled on it; the MCP the `.mcp.json` drop-in wires up. Public on npm (4.0.0); server key `lando-ds`. |
 
 ## Update Log
 

@@ -45,9 +45,14 @@ change in lockstep. The smoke test is what guards this automatically.
   (which blocked everything on the DS going public) is **resolved**. The DS
   shipped under a new name; `@lando-labs/design-system` never published.
   The smoke test now runs live against public npm.
-- ⏳ **MCP not yet published** — locally `@lando-labs/design-system-mcp` v3.3.0,
-  mid-rename. The scaffolded `.mcp.json` and the agent's MCP-first loop stay
-  inert for external users until it publishes (#16). Everything else works.
+- ✅ **MCP is public** — `@lando-labs/lando-ds-mcp@4.0.0` on npm (was
+  `@lando-labs/design-system-mcp` v3.3.0; renamed + majored alongside the DS).
+  The scaffolded `.mcp.json` wires it as server key **`lando-ds`** per the MCP's
+  own README, and is verified to launch: `lando-ds v4.0.0`, 127 components,
+  19 hooks, 15 tools, backed by `@lando-labs/lando-ds-meta v0.57.0`.
+
+**Both halves of the front door's dependency chain are now public.** Nothing in
+epic #17 is externally blocked.
 
 ## Update Log
 

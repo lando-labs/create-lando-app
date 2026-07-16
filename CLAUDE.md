@@ -21,7 +21,7 @@ monorepo package. It publishes to public npm on its own release pipeline.
 | Repo (local dir) | npm package | Role |
 | --- | --- | --- |
 | `~/lando-labs/lando-ds` | `@lando-labs/lando-ds` | The component library. Source of truth for the cascade-layer contract. **Public on npm** (0.57.0). (`~/lando-labs/lando-labs-design-system` is the stale pre-rename checkout.) |
-| `~/lando-labs/lando-ds-mcp` | `@lando-labs/design-system-mcp` | The MCP server. This repo's conventions (build, CI, publish) were modeled on it. **Not yet published**; mid-rename alongside the DS (#16). |
+| `~/lando-labs/lando-ds-mcp` | `@lando-labs/lando-ds-mcp` | The MCP server. This repo's conventions (build, CI, publish) were modeled on it. **Public on npm** (4.0.0). The scaffolded `.mcp.json` wires it as server key `lando-ds`. |
 | `~/lando-labs/create-lando-app` *(this repo)* | `create-lando-app` | The scaffold CLI. |
 
 ## Repo layout

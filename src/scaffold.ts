@@ -19,12 +19,16 @@ export const DS_VERSION = '^0.57.0'
 
 /**
  * The Lando DS MCP server package the `.mcp.json` drop-in points at.
- *
- * TODO(#16): not yet published to npm. The MCP is mid-rename alongside the DS
- * (locally still `@lando-labs/design-system-mcp`), so this name is provisional
- * until the MCP publishes. The scaffolded `.mcp.json` won't resolve until then.
+ * `@latest` is deliberate: it stops `npx` from reusing a stale cached copy.
  */
-export const MCP_PACKAGE = '@lando-labs/design-system-mcp@latest'
+export const MCP_PACKAGE = '@lando-labs/lando-ds-mcp@latest'
+
+/**
+ * The mcpServers key the DS MCP documents for client configs. This is what
+ * namespaces the tools the agent sees (`mcp__lando-ds__*`), so it must match
+ * the MCP's own README.
+ */
+export const MCP_SERVER_KEY = 'lando-ds'
 
 /** Recursively replace `{{KEY}}` tokens in every text file under `dir`. */
 export async function substitutePlaceholders(
@@ -99,7 +103,7 @@ export async function scaffold(opts: ScaffoldOptions): Promise<void> {
   if (mcp) {
     const mcpConfig = {
       mcpServers: {
-        'lando-design-system': { command: 'npx', args: ['-y', MCP_PACKAGE] },
+        [MCP_SERVER_KEY]: { command: 'npx', args: ['-y', MCP_PACKAGE] },
       },
     }
     await writeFile(
