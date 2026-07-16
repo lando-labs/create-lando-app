@@ -112,3 +112,23 @@ node dist/index.js    # runs the interactive CLI in the current directory
 
 `HANDOVER.md` — the full origin story, decisions, what's built vs. gated, and
 the immediate next steps.
+
+## The AI drop-in (agent + MCP)
+
+When MCP wiring is enabled (default; `--no-mcp` opts out), the scaffold writes:
+
+- `.mcp.json` — server key `lando-ds` → `npx -y @lando-labs/lando-ds-mcp@latest`
+- `.claude/agents/nextjs-lando-ds.md` — the DS-aware agent
+
+The agent is **vendored** at `templates/_shared/agents/nextjs-lando-ds.md`, copied
+from the DS repo (`~/lando-labs/lando-ds/.claude/agents/`). Two reasons it lives
+under `_shared/` rather than inside a template:
+
+1. It's framework-agnostic — the future Vite template gets it for free.
+2. The repo `.npmignore` excludes `.claude/`, so an agent stored at
+   `templates/<t>/.claude/agents/` would be **silently stripped** from the
+   published tarball.
+
+Syncing the vendored copy back to its source is not automated yet — re-copy it
+when the DS repo's agent changes. The smoke test asserts the agent lands and that
+`.mcp.json` resolves to a live server, so a broken drop-in fails CI.
