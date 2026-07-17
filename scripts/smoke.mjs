@@ -122,6 +122,7 @@ try {
   // The AI half of the front door: the agent must land where Claude Code looks,
   // and the .mcp.json we wrote must actually resolve to a live server.
   await assertAgentDropIn(projectDir)
+  await assertBriefingLayer(projectDir)
   await assertMcpResolves(projectDir)
 
   console.log('\n✓ SMOKE TEST PASSED — #462 contract + AI wiring intact')
@@ -150,6 +151,68 @@ async function assertAgentDropIn(projectDir) {
     fail('agent file is present but its frontmatter has no `name: nextjs-lando-ds`')
   }
   log('agent ok: .claude/agents/nextjs-lando-ds.md')
+}
+
+/**
+ * The AI briefing layer: one canonical brief (`AGENTS.md`), thin pointers for
+ * each tool, and a project MCP config per tool's own convention.
+ *
+ * Every one of these is silently inert when wrong — a mistyped path or TOML key
+ * produces a file no tool ever reads, with nothing failing. So assert the shapes,
+ * and assert the three MCP configs still agree (the drift they exist to prevent).
+ */
+async function assertBriefingLayer(projectDir) {
+  log('Asserting AI briefing layer …')
+  const read = async (rel) => {
+    try {
+      return await readFile(join(projectDir, rel), 'utf8')
+    } catch {
+      fail(`missing ${rel} — the briefing drop-in broke, or it never shipped`)
+    }
+  }
+
+  // Canonical brief.
+  const agents = await read('AGENTS.md')
+  if (!/app\/providers\.tsx/.test(agents)) {
+    fail('AGENTS.md has no `app/providers.tsx` theme rule — the human→AI loop is open')
+  }
+
+  // Pointers. CLAUDE.md must actually import the brief, not paraphrase it.
+  const claude = await read('CLAUDE.md')
+  if (!/@AGENTS\.md/.test(claude)) fail('CLAUDE.md does not import @AGENTS.md')
+
+  const rule = await read('.cursor/rules/lando-ds.mdc')
+  if (!/^---[\s\S]*?alwaysApply:\s*true/m.test(rule)) {
+    fail('.cursor/rules/lando-ds.mdc lacks `alwaysApply: true` frontmatter')
+  }
+  // Cursor: always-apply rules cost tokens on every request; keep it a pointer.
+  const words = rule.replace(/^---[\s\S]*?---/, '').trim().split(/\s+/).length
+  if (words > 200) fail(`Cursor always-apply rule is ${words} words; keep it under 200`)
+
+  await read('START_HERE.md')
+
+  // No placeholder may survive into a user's project.
+  for (const f of ['AGENTS.md', 'CLAUDE.md', 'START_HERE.md', '.cursor/rules/lando-ds.mdc']) {
+    if (/\{\{[A-Z_]+\}\}/.test(await read(f))) fail(`${f} still contains an unsubstituted {{PLACEHOLDER}}`)
+  }
+
+  // All three tools must point at the same server + package.
+  const claudeCfg = JSON.parse(await read('.mcp.json')).mcpServers
+  const cursorCfg = JSON.parse(await read('.cursor/mcp.json')).mcpServers
+  const codex = await read('.codex/config.toml')
+
+  const key = Object.keys(claudeCfg)[0]
+  const pkg = claudeCfg[key].args.at(-1)
+  if (Object.keys(cursorCfg)[0] !== key || cursorCfg[key].args.at(-1) !== pkg) {
+    fail('.cursor/mcp.json disagrees with .mcp.json — configs drifted')
+  }
+  // Codex's table key is `mcp_servers` (underscores). camelCase = inert file.
+  if (!new RegExp(`\\[mcp_servers\\.${key}\\]`).test(codex)) {
+    fail(`.codex/config.toml has no [mcp_servers.${key}] table — wrong key means Codex silently ignores it`)
+  }
+  if (!codex.includes(pkg)) fail('.codex/config.toml disagrees with .mcp.json — configs drifted')
+
+  log(`briefing ok: AGENTS.md + pointers; MCP wired for claude/cursor/codex → "${key}"`)
 }
 
 /**

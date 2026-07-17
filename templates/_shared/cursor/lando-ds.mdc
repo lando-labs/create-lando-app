@@ -1,0 +1,24 @@
+---
+description: Lando Design System project conventions — read AGENTS.md before writing code
+alwaysApply: true
+---
+
+Read `AGENTS.md` in the project root before writing code. It is the single brief
+for this project; this rule only points at it.
+
+The essentials, so you don't need to open it for small edits:
+
+- Built on `@lando-labs/lando-ds`. **Use the design system — don't rebuild it.**
+  A `lando-ds` MCP server is configured (`.cursor/mcp.json`); ask it for
+  components, props, and tokens rather than assuming an API from memory.
+- **No Tailwind or utility CSS.** Style only via DS components and design tokens.
+  A hardcoded hex, spacing, or font size is a bug.
+- **Server Components by default**; `'use client'` only for interactivity.
+- **The theme preset lives in `app/providers.tsx`** — read it before any color
+  decision. Changing it takes two matching edits (`providers.tsx` and the
+  `themeScript({ defaultPreset })` call in `app/layout.tsx`), or the app flashes
+  the wrong palette on load.
+- **Never add an unlayered global reset** — the app reset belongs in
+  `@layer app-reset`. Deliberate overrides go in `@layer app`.
+
+Anything beyond this: open `AGENTS.md`.
