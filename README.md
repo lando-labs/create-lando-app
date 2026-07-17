@@ -41,7 +41,12 @@ A Next.js App Router project with:
   component spacing (issue #462)
 - **Anti-flash** theme application via `themeScript()` in the server `<head>`
 - A **`.mcp.json`** wiring Claude Code / Cursor to the Lando DS MCP server for
-  design-system-aware codegen (on by default; `--no-mcp` to skip)
+  design-system-aware codegen
+- The **`nextjs-lando-ds` agent** at `.claude/agents/`, ready to build UI by
+  querying the design system through the MCP
+
+The MCP config and the agent are on by default and travel together — the agent's
+whole method is querying the MCP, so it's inert without it. `--no-mcp` skips both.
 
 ## Templates
 

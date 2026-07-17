@@ -23,11 +23,14 @@ import { mkdtemp, rm, readFile, access } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { spawnSync } from 'node:child_process'
+import { spawnSync, spawn } from 'node:child_process'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(here, '..')
 const TEMPLATES_DIR = join(ROOT, 'templates')
+
+/** Generous: the first run has to `npx` the MCP down from the registry. */
+const MCP_TIMEOUT_MS = 120_000
 
 function log(msg) {
   console.log(`  ${msg}`)
@@ -87,7 +90,7 @@ try {
     targetDir: projectDir,
     projectName: 'smoke-app',
     dsVersion: dsSpec,
-    mcp: false,
+    mcp: true, // exercise the full AI wiring (.mcp.json + agent drop-in)
   })
 
   log('npm install …')
@@ -116,9 +119,107 @@ try {
   // Assert app-reset is declared before the ll.* layers.
   await assertLayerOrder(projectDir)
 
-  console.log('\n✓ SMOKE TEST PASSED — #462 cascade-layer contract intact')
+  // The AI half of the front door: the agent must land where Claude Code looks,
+  // and the .mcp.json we wrote must actually resolve to a live server.
+  await assertAgentDropIn(projectDir)
+  await assertMcpResolves(projectDir)
+
+  console.log('\n✓ SMOKE TEST PASSED — #462 contract + AI wiring intact')
 } finally {
   await rm(workdir, { recursive: true, force: true })
+}
+
+/**
+ * The agent must land exactly where Claude Code discovers subagents. It's
+ * vendored from `templates/_shared/` (not the template's own `.claude/`, which
+ * the repo `.npmignore` would strip from the tarball) — so this also catches the
+ * agent silently failing to ship.
+ */
+async function assertAgentDropIn(projectDir) {
+  log('Asserting agent drop-in …')
+  const agentPath = join(projectDir, '.claude', 'agents', 'nextjs-lando-ds.md')
+  try {
+    await access(agentPath)
+  } catch {
+    fail(
+      'agent missing at .claude/agents/nextjs-lando-ds.md — the drop-in broke, or the agent was stripped from the package',
+    )
+  }
+  const body = await readFile(agentPath, 'utf8')
+  if (!/^---[\s\S]*?\bname:\s*nextjs-lando-ds\b/m.test(body)) {
+    fail('agent file is present but its frontmatter has no `name: nextjs-lando-ds`')
+  }
+  log('agent ok: .claude/agents/nextjs-lando-ds.md')
+}
+
+/**
+ * Spawn the EXACT command the scaffolded `.mcp.json` declares and run an MCP
+ * `initialize` handshake. A config that names a package which doesn't resolve
+ * (or a server that crashes on boot) shows up as a broken server in the user's
+ * editor — this is the guard for that.
+ *
+ * Timing is done in-process: `timeout(1)` does not exist on macOS, so a shell
+ * probe would silently "pass" by never running at all.
+ */
+async function assertMcpResolves(projectDir) {
+  log('Asserting .mcp.json resolves to a live server …')
+  const cfg = JSON.parse(await readFile(join(projectDir, '.mcp.json'), 'utf8'))
+  const keys = Object.keys(cfg.mcpServers ?? {})
+  if (keys.length !== 1) fail(`.mcp.json should declare exactly one server, got ${keys.length}`)
+  const [key] = keys
+  const { command, args } = cfg.mcpServers[key]
+
+  const child = spawn(command, args, { stdio: ['pipe', 'pipe', 'pipe'] })
+  let out = ''
+  let err = ''
+  child.stdout.on('data', (d) => (out += d))
+  child.stderr.on('data', (d) => (err += d))
+  child.stdin.write(
+    JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'initialize',
+      params: {
+        protocolVersion: '2024-11-05',
+        capabilities: {},
+        clientInfo: { name: 'create-lando-app-smoke', version: '0' },
+      },
+    }) + '\n',
+  )
+
+  const outcome = await new Promise((res) => {
+    const timer = setTimeout(() => res('timeout'), MCP_TIMEOUT_MS)
+    const poll = setInterval(() => {
+      if (out.includes('"result"') || out.includes('"error"')) {
+        clearTimeout(timer)
+        clearInterval(poll)
+        res('responded')
+      }
+    }, 250)
+    child.on('error', () => {
+      clearTimeout(timer)
+      clearInterval(poll)
+      res('spawn-error')
+    })
+    child.on('exit', (code) => {
+      clearTimeout(timer)
+      clearInterval(poll)
+      res(`exited(${code})`)
+    })
+  })
+  child.kill()
+
+  if (outcome !== 'responded') {
+    fail(
+      `MCP server "${key}" (${command} ${args.join(' ')}) did not answer initialize — outcome: ${outcome}.` +
+        (err.trim() ? `\n  stderr: ${err.slice(0, 300)}` : ''),
+    )
+  }
+
+  const line = out.split('\n').find((l) => l.trim().startsWith('{'))
+  const info = JSON.parse(line).result?.serverInfo
+  if (!info?.name) fail('MCP initialize returned no serverInfo')
+  log(`mcp ok: server "${key}" → ${info.name} v${info.version}`)
 }
 
 /**

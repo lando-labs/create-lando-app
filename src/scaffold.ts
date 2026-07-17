@@ -1,12 +1,12 @@
 /**
  * Shared scaffold logic for create-lando-app.
  *
- * Extracted from the CLI so the consumer smoke test (`scripts/smoke.ts`) can
+ * Extracted from the CLI so the consumer smoke test (`scripts/smoke.mjs`) can
  * scaffold via the EXACT same code path the CLI uses — copy → `_gitignore`
- * rename → placeholder substitution → optional `.mcp.json`. If these two ever
- * drift, the smoke test stops guarding what the CLI actually ships.
+ * rename → placeholder substitution → AI wiring. If these two ever drift, the
+ * smoke test stops guarding what the CLI actually ships.
  */
-import { cp, readFile, writeFile, rename, readdir } from 'node:fs/promises'
+import { cp, readFile, writeFile, rename, readdir, mkdir } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 
@@ -29,6 +29,18 @@ export const MCP_PACKAGE = '@lando-labs/lando-ds-mcp@latest'
  * the MCP's own README.
  */
 export const MCP_SERVER_KEY = 'lando-ds'
+
+/**
+ * The DS-aware agent dropped into the scaffolded project.
+ *
+ * Vendored from the design-system repo (`.claude/agents/nextjs-lando-ds.md`).
+ * It lives under `templates/_shared/` rather than inside a template because it
+ * is framework-agnostic — and because the repo `.npmignore` excludes `.claude/`,
+ * so an agent stored at `templates/<t>/.claude/agents/` would be silently
+ * stripped from the published tarball.
+ */
+export const AGENT_FILE = 'nextjs-lando-ds.md'
+const SHARED_DIR = '_shared'
 
 /** Recursively replace `{{KEY}}` tokens in every text file under `dir`. */
 export async function substitutePlaceholders(
@@ -63,18 +75,24 @@ export interface ScaffoldOptions {
   projectName: string
   /**
    * Substituted for `{{DS_VERSION}}`. Defaults to {@link DS_VERSION}. The smoke
-   * test overrides this with a `file:` tarball spec so it can build against a
-   * local DS `npm pack` before the DS is on public npm (the A1 gate).
+   * test overrides this with a `file:` tarball spec to build against an
+   * unreleased local DS `npm pack`.
    */
   dsVersion?: string
-  /** When true, write a `.mcp.json` wiring the Lando DS MCP server. */
+  /**
+   * Wire the project's AI: write `.mcp.json` for the Lando DS MCP server and
+   * drop the `nextjs-lando-ds` agent into `.claude/agents/`.
+   *
+   * These travel together on purpose — the agent's whole method is querying the
+   * MCP, so it is inert without it. `--no-mcp` opts out of both.
+   */
   mcp?: boolean
 }
 
 /**
  * Materialize a template into `targetDir`: copy files, restore the `.gitignore`
  * dotfile name (npm strips real `.gitignore` from tarballs, so it ships as
- * `_gitignore`), substitute placeholders, and optionally drop in `.mcp.json`.
+ * `_gitignore`), substitute placeholders, and wire the AI (`.mcp.json` + agent).
  */
 export async function scaffold(opts: ScaffoldOptions): Promise<void> {
   const {
@@ -110,5 +128,13 @@ export async function scaffold(opts: ScaffoldOptions): Promise<void> {
       join(targetDir, '.mcp.json'),
       JSON.stringify(mcpConfig, null, 2) + '\n',
     )
+
+    // Drop the DS-aware agent where Claude Code discovers it.
+    const agentSrc = join(templatesDir, SHARED_DIR, 'agents', AGENT_FILE)
+    if (existsSync(agentSrc)) {
+      const agentDir = join(targetDir, '.claude', 'agents')
+      await mkdir(agentDir, { recursive: true })
+      await cp(agentSrc, join(agentDir, AGENT_FILE))
+    }
   }
 }
