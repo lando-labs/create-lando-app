@@ -9,7 +9,29 @@ A [Next.js](https://nextjs.org) app pre-wired with the
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) and edit `app/page.tsx`.
+Open [http://localhost:{{DEV_PORT}}](http://localhost:{{DEV_PORT}}) and edit `app/page.tsx`.
+
+### Changing the port
+
+This app runs on **{{DEV_PORT}}** instead of Next's default 3000, so it won't
+fight whatever else you have running. To use a different port, edit the `dev`
+(and `start`) scripts in **`package.json`**:
+
+```jsonc
+"scripts": {
+  "dev": "next dev -p {{DEV_PORT}}",     // ← change the number here
+  "start": "next start -p {{DEV_PORT}}"  // ← and here, to match
+}
+```
+
+Or override it for a single run without editing anything:
+
+```bash
+npm run dev -- -p 3000
+```
+
+Pick a port **1024 or higher** — lower ones are privileged and will fail with
+`EACCES` unless you run as root.
 
 ## What's wired up
 
