@@ -15,6 +15,7 @@ it is the **top of the acquisition funnel** for the eventual paid MCP product.
 | --- | --- | --- |
 | **CLI** | `src/index.ts` | Prompts, package-manager detection, template copy, placeholder substitution, optional install, optional `.mcp.json` drop-in. Holds the `DS_VERSION` constant. |
 | **Templates** | `templates/next-app-router/**` | The scaffolded app. Encodes the #462 cascade-layer golden path. `_gitignore` renamed to `.gitignore` on copy. Placeholders: `{{PROJECT_NAME}}`, `{{DS_VERSION}}`. |
+| **AI briefing layer** | `templates/next-app-router/{AGENTS.md,CLAUDE.md,START_HERE.md}`, `templates/_shared/cursor/lando-ds.mdc` | ✅ built. `AGENTS.md` is canonical (Codex native; `CLAUDE.md` imports it; Cursor rule points at it). `START_HERE.md` is a self-deleting first-run bootstrap. Project MCP generated for all three tools from one pair of constants. Gated on the `mcp` flag. |
 | **Scaffold module** | `src/scaffold.ts` | Shared copy/rename/substitute/`.mcp.json` logic + the `DS_VERSION` constant. Imported by both the CLI and the smoke test so the guard can't drift from what ships. |
 | **Test / smoke harness** | `scripts/smoke.mjs`, `npm test` | ✅ built. Consumer smoke test: scaffold (via `dist/scaffold.js`) → install DS → `next build` → assert `app-reset` is the lowest cascade layer. Dormant-safe (skips + exit 0 until the DS is resolvable). |
 | **CI / release** | `.github/workflows/{test,publish}.yml` | Typecheck/build/test on PR; tag-push publish to public npm (provenance) + GitHub Release. |
@@ -57,6 +58,8 @@ epic #17 is externally blocked.
 ## Update Log
 
 - 2026-07-12 — Initial creation during repo/GitHub setup + first sprint plan.
+- 2026-07-17 — Sprint 2 (PR #21): AI briefing layer — `AGENTS.md` + `START_HERE.md`
+  + per-tool MCP (Claude/Cursor/Codex). Dev port moved to 7711 (PR #20).
 - 2026-07-12 — Sprint 1 (PR #8): added the `src/scaffold.ts` shared module; the
   smoke harness (`scripts/smoke.mjs`) and drift receiver (`ds-drift.yml`) are now
   built (dormant until A1). `DS_VERSION` moved from `src/index.ts` → `src/scaffold.ts`.
