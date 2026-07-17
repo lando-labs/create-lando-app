@@ -23,8 +23,7 @@ any UI:
    the MCP is the source of truth for what's installed *here*, right now.
 3. **Don't reinvent a component the DS already has.**
 
-There is a `nextjs-lando-ds` agent set up for this project (Claude Code:
-`.claude/agents/`). **Use it for UI work** — it knows the DS's conventions.
+{{AGENT_NOTE}}
 
 ## Hard rules
 

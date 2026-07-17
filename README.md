@@ -23,11 +23,22 @@ fetch and run this package.
 
 | Flag | What it does |
 | --- | --- |
+| `--ai <tools>` | Which AI tools to wire: `claude`, `cursor`, `codex` (comma-separated). Defaults to all. `--ai none` skips AI wiring. |
 | `--force` | Scaffold even if the target directory already has files |
-| `--no-mcp` | Skip the MCP client config drop-in |
+| `--no-mcp` | Alias for `--ai none` |
 | `--no-install` | Skip installing dependencies |
 | `-y`, `--yes` | Accept defaults without prompting |
 | `-h`, `--help` | Show usage |
+
+Only use one editor? Wire just that one:
+
+```bash
+npx create-lando-app --ai cursor
+npx create-lando-app --ai claude,codex
+```
+
+Every tool shares one `AGENTS.md` brief — only the pointers and MCP configs are
+per-tool, so there's nothing to keep in sync.
 
 Running with no directory scaffolds **in place**. A fresh `mkdir` (even after
 `git init`) counts as empty — dotfiles are ignored.

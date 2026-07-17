@@ -50,15 +50,25 @@ export const MCP_SERVER_KEY = 'lando-ds'
 export const AGENT_FILE = 'nextjs-lando-ds.md'
 const SHARED_DIR = '_shared'
 
+/** AI tools the scaffold knows how to wire. */
+export const AI_TOOLS = ['claude', 'cursor', 'codex'] as const
+export type AiTool = (typeof AI_TOOLS)[number]
+
 /**
- * The AI brief and its bootstrap. These live in the template (they reference
- * Next-specific files and use placeholders), so they arrive with the normal copy
- * and get substituted — then get removed again when AI wiring is opted out of.
+ * The shared brief and its bootstrap — written for ANY tool selection.
  *
  * `AGENTS.md` is canonical: Codex reads it natively, `CLAUDE.md` imports it, and
- * the Cursor rule points at it. One brief, three tools, no drift.
+ * the Cursor rule points at it. One brief, three readers, no drift. Only the
+ * pointers are per-tool.
+ *
+ * These live in the template (they reference Next-specific files and use
+ * placeholders) so they arrive with the normal copy and get substituted — then
+ * get removed again for the tools that weren't asked for.
  */
-const AI_DOCS = ['AGENTS.md', 'CLAUDE.md', 'START_HERE.md']
+const SHARED_AI_DOCS = ['AGENTS.md', 'START_HERE.md']
+
+/** Claude Code's pointer. Removed unless `claude` is selected. */
+const CLAUDE_DOC = 'CLAUDE.md'
 
 /** Cursor's project rule — `.cursor/rules/*.mdc`, `alwaysApply`, kept <200 words. */
 const CURSOR_RULE = 'lando-ds.mdc'
@@ -113,13 +123,12 @@ export interface ScaffoldOptions {
    */
   dsVersion?: string
   /**
-   * Wire the project's AI: write `.mcp.json` for the Lando DS MCP server and
-   * drop the `nextjs-lando-ds` agent into `.claude/agents/`.
+   * Which AI tools to wire. Each gets its own MCP config and pointer, in its own
+   * documented convention; all of them share one `AGENTS.md`.
    *
-   * These travel together on purpose — the agent's whole method is querying the
-   * MCP, so it is inert without it. `--no-mcp` opts out of both.
+   * An empty array writes no AI files at all. Defaults to every tool.
    */
-  mcp?: boolean
+  ai?: readonly AiTool[]
 }
 
 /**
@@ -134,8 +143,10 @@ export async function scaffold(opts: ScaffoldOptions): Promise<void> {
     targetDir,
     projectName,
     dsVersion = DS_VERSION,
-    mcp = false,
+    ai = AI_TOOLS,
   } = opts
+  const wants = (tool: AiTool) => ai.includes(tool)
+  const anyAi = ai.length > 0
 
   await cp(join(templatesDir, template), targetDir, { recursive: true })
 
@@ -146,21 +157,28 @@ export async function scaffold(opts: ScaffoldOptions): Promise<void> {
     await rename(storedGitignore, join(targetDir, '.gitignore'))
   }
 
-  // The AI brief ships in the template, so it is placed (or removed) BEFORE
-  // substitution — that way `{{PROJECT_NAME}}` / `{{DEV_PORT}}` resolve inside it.
-  if (!mcp) {
-    for (const doc of AI_DOCS) {
-      await rm(join(targetDir, doc), { force: true })
-    }
+  // The AI docs ship in the template, so they are pruned BEFORE substitution —
+  // that way `{{PROJECT_NAME}}` / `{{DEV_PORT}}` resolve in whatever remains.
+  const unwanted = [
+    ...(anyAi ? [] : SHARED_AI_DOCS),
+    ...(wants('claude') ? [] : [CLAUDE_DOC]),
+  ]
+  for (const doc of unwanted) {
+    await rm(join(targetDir, doc), { force: true })
   }
 
   await substitutePlaceholders(targetDir, {
     PROJECT_NAME: projectName,
     DS_VERSION: dsVersion,
     DEV_PORT: String(DEV_PORT),
+    // The brief must not promise an agent that wasn't installed: the subagent is
+    // a Claude Code feature, so this line only survives when claude is wired.
+    AGENT_NOTE: wants('claude')
+      ? `There is a \`nextjs-lando-ds\` agent set up for this project (Claude Code:\n\`.claude/agents/\`). **Use it for UI work** — it knows the DS's conventions.`
+      : `Ask the MCP before you build. It is the source of truth for what's\ninstalled here.`,
   })
 
-  if (mcp) await wireAi(templatesDir, targetDir)
+  if (anyAi) await wireAi(templatesDir, targetDir, ai)
 }
 
 /**
@@ -171,51 +189,57 @@ export async function scaffold(opts: ScaffoldOptions): Promise<void> {
  * each tool's documented convention — a wrong one is silently inert, not an
  * error, so they are asserted by the smoke test.
  */
-async function wireAi(templatesDir: string, targetDir: string): Promise<void> {
+async function wireAi(
+  templatesDir: string,
+  targetDir: string,
+  ai: readonly AiTool[],
+): Promise<void> {
   const server = { command: 'npx', args: ['-y', MCP_PACKAGE] }
+  const mcpJson =
+    JSON.stringify({ mcpServers: { [MCP_SERVER_KEY]: server } }, null, 2) + '\n'
 
-  // Claude Code — project MCP.
-  await writeFile(
-    join(targetDir, '.mcp.json'),
-    JSON.stringify({ mcpServers: { [MCP_SERVER_KEY]: server } }, null, 2) + '\n',
-  )
+  if (ai.includes('claude')) {
+    // Project MCP.
+    await writeFile(join(targetDir, '.mcp.json'), mcpJson)
 
-  // Cursor — same shape, its own path.
-  const cursorDir = join(targetDir, '.cursor')
-  await mkdir(join(cursorDir, 'rules'), { recursive: true })
-  await writeFile(
-    join(cursorDir, 'mcp.json'),
-    JSON.stringify({ mcpServers: { [MCP_SERVER_KEY]: server } }, null, 2) + '\n',
-  )
-
-  // Cursor — project rule (thin pointer at AGENTS.md).
-  const ruleSrc = join(templatesDir, SHARED_DIR, 'cursor', CURSOR_RULE)
-  if (existsSync(ruleSrc)) {
-    await cp(ruleSrc, join(cursorDir, 'rules', CURSOR_RULE))
+    // The DS-aware agent, where Claude Code discovers subagents.
+    const agentSrc = join(templatesDir, SHARED_DIR, 'agents', AGENT_FILE)
+    if (existsSync(agentSrc)) {
+      const agentDir = join(targetDir, '.claude', 'agents')
+      await mkdir(agentDir, { recursive: true })
+      await cp(agentSrc, join(agentDir, AGENT_FILE))
+    }
   }
 
-  // Codex — TOML, and the table key is `mcp_servers` (underscores). Project
-  // scope requires the user to trust the project.
-  const argsToml = server.args.map((a) => JSON.stringify(a)).join(', ')
-  await mkdir(join(targetDir, '.codex'), { recursive: true })
-  await writeFile(
-    join(targetDir, '.codex', 'config.toml'),
-    [
-      '# Lando DS MCP server for this project.',
-      '# Codex applies project-scoped config only in trusted projects; if the',
-      '# server does not appear, trust this directory and restart Codex.',
-      `[mcp_servers.${MCP_SERVER_KEY}]`,
-      `command = ${JSON.stringify(server.command)}`,
-      `args = [${argsToml}]`,
-      '',
-    ].join('\n'),
-  )
+  if (ai.includes('cursor')) {
+    // Same MCP shape, Cursor's own path.
+    const cursorDir = join(targetDir, '.cursor')
+    await mkdir(join(cursorDir, 'rules'), { recursive: true })
+    await writeFile(join(cursorDir, 'mcp.json'), mcpJson)
 
-  // Claude Code — the DS-aware agent, where it discovers subagents.
-  const agentSrc = join(templatesDir, SHARED_DIR, 'agents', AGENT_FILE)
-  if (existsSync(agentSrc)) {
-    const agentDir = join(targetDir, '.claude', 'agents')
-    await mkdir(agentDir, { recursive: true })
-    await cp(agentSrc, join(agentDir, AGENT_FILE))
+    // Project rule (thin pointer at AGENTS.md).
+    const ruleSrc = join(templatesDir, SHARED_DIR, 'cursor', CURSOR_RULE)
+    if (existsSync(ruleSrc)) {
+      await cp(ruleSrc, join(cursorDir, 'rules', CURSOR_RULE))
+    }
+  }
+
+  if (ai.includes('codex')) {
+    // TOML, and the table key is `mcp_servers` (underscores). Project scope
+    // requires the user to trust the project.
+    const argsToml = server.args.map((a) => JSON.stringify(a)).join(', ')
+    await mkdir(join(targetDir, '.codex'), { recursive: true })
+    await writeFile(
+      join(targetDir, '.codex', 'config.toml'),
+      [
+        '# Lando DS MCP server for this project.',
+        '# Codex applies project-scoped config only in trusted projects; if the',
+        '# server does not appear, trust this directory and restart Codex.',
+        `[mcp_servers.${MCP_SERVER_KEY}]`,
+        `command = ${JSON.stringify(server.command)}`,
+        `args = [${argsToml}]`,
+        '',
+      ].join('\n'),
+    )
   }
 }

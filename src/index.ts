@@ -16,7 +16,7 @@ import { resolve, dirname, basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawn } from 'node:child_process'
 import * as p from '@clack/prompts'
-import { scaffold, DEV_PORT } from './scaffold.js'
+import { scaffold, DEV_PORT, AI_TOOLS, type AiTool } from './scaffold.js'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const TEMPLATES_DIR = resolve(here, '..', 'templates')
@@ -28,8 +28,8 @@ interface Options {
   dir?: string
   /** Allow scaffolding into a directory that already has content. */
   force: boolean
-  /** Write the MCP client config. On by default. */
-  mcp: boolean
+  /** AI tools to wire. Defaults to all; empty means none. */
+  ai: AiTool[]
   /** undefined = ask; true/false = decided by a flag. */
   install?: boolean
   help: boolean
@@ -43,16 +43,48 @@ Usage
   npx create-lando-app <dir>      Scaffold into <dir>
 
 Options
+  --ai <tools>   Which AI tools to wire, comma-separated: ${AI_TOOLS.join(', ')}.
+                 Defaults to all of them. Use "--ai none" for no AI wiring.
+                 e.g. --ai claude        --ai cursor,codex
   --force        Scaffold even if the target directory has files in it
-  --no-mcp       Skip the MCP client config drop-in
+  --no-mcp       Alias for --ai none
   --no-install   Skip installing dependencies
   -y, --yes      Accept defaults without prompting
   -h, --help     Show this message
 `
 
+/** Parse a `--ai` value into tools. Throws a usable message on a bad name. */
+function parseAiList(raw: string): AiTool[] {
+  const parts = raw
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean)
+  if (parts.length === 0 || parts.includes('none')) return []
+  const bad = parts.filter((p) => !AI_TOOLS.includes(p as AiTool))
+  if (bad.length > 0) {
+    console.error(
+      `Unknown --ai value: ${bad.join(', ')}\nValid tools: ${AI_TOOLS.join(', ')} (or "none").`,
+    )
+    process.exit(1)
+  }
+  // De-dupe, keep a stable order.
+  return AI_TOOLS.filter((t) => parts.includes(t))
+}
+
 function parseArgs(argv: string[]): Options {
-  const opts: Options = { force: false, mcp: true, help: false }
-  for (const arg of argv) {
+  const opts: Options = { force: false, ai: [...AI_TOOLS], help: false }
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i] as string
+    // `--ai=claude,cursor` and `--ai claude,cursor` are both accepted.
+    if (arg === '--ai' || arg.startsWith('--ai=')) {
+      const value = arg.startsWith('--ai=') ? arg.slice('--ai='.length) : argv[++i]
+      if (value === undefined) {
+        console.error(`--ai needs a value, e.g. --ai claude,cursor (or "none").`)
+        process.exit(1)
+      }
+      opts.ai = parseAiList(value)
+      continue
+    }
     switch (arg) {
       case '-h':
       case '--help':
@@ -62,7 +94,7 @@ function parseArgs(argv: string[]): Options {
         opts.force = true
         break
       case '--no-mcp':
-        opts.mcp = false
+        opts.ai = []
         break
       case '--no-install':
         opts.install = false
@@ -185,10 +217,14 @@ async function main(): Promise<void> {
     template,
     targetDir,
     projectName,
-    mcp: opts.mcp,
+    ai: opts.ai,
   })
 
-  s.stop('Project scaffolded')
+  s.stop(
+    opts.ai.length > 0
+      ? `Project scaffolded · AI wired for ${opts.ai.join(', ')}`
+      : 'Project scaffolded',
+  )
 
   if (doInstall) {
     p.log.step(`Installing dependencies with ${pm}…`)
