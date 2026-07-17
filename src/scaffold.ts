@@ -42,6 +42,18 @@ export const MCP_SERVER_KEY = 'lando-ds'
 export const AGENT_FILE = 'nextjs-lando-ds.md'
 const SHARED_DIR = '_shared'
 
+/**
+ * Dev-server port for the scaffolded app — 7711, not Next's default 3000, so a
+ * new project doesn't collide with whatever else the user already has running.
+ * Unregistered in /etc/services and well clear of the privileged range.
+ *
+ * Substituted as `{{DEV_PORT}}` so the template's scripts, its README, and the
+ * CLI's next-steps line can't drift apart. Change it here and all three follow.
+ *
+ * Must stay >= 1024: ports below that are privileged and would make
+ * `npm run dev` fail with EACCES unless run as root.
+ */
+export const DEV_PORT = 7711
 /** Recursively replace `{{KEY}}` tokens in every text file under `dir`. */
 export async function substitutePlaceholders(
   dir: string,
@@ -116,6 +128,7 @@ export async function scaffold(opts: ScaffoldOptions): Promise<void> {
   await substitutePlaceholders(targetDir, {
     PROJECT_NAME: projectName,
     DS_VERSION: dsVersion,
+    DEV_PORT: String(DEV_PORT),
   })
 
   if (mcp) {

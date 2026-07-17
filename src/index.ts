@@ -16,7 +16,7 @@ import { resolve, dirname, basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawn } from 'node:child_process'
 import * as p from '@clack/prompts'
-import { scaffold } from './scaffold.js'
+import { scaffold, DEV_PORT } from './scaffold.js'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const TEMPLATES_DIR = resolve(here, '..', 'templates')
@@ -200,7 +200,7 @@ async function main(): Promise<void> {
     }
   }
 
-  const devCmd = pm === 'npm' ? 'npm run dev' : `${pm} dev`
+  const devCmd = `${pm === 'npm' ? 'npm run dev' : `${pm} dev`}   → http://localhost:${DEV_PORT}`
   const installLine = doInstall ? null : pm === 'yarn' ? 'yarn' : `${pm} install`
   const steps = [
     inPlace ? null : `cd ${opts.dir}`,
