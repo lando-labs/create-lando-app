@@ -26,10 +26,19 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Anti-flash: apply the persisted theme before first paint.
-            themeScript() is RSC-safe, so calling it here in a Server
-            Component is supported (#384). */}
-        <script dangerouslySetInnerHTML={{ __html: themeScript() }} />
+        {/* Anti-flash: apply the persisted theme AND preset before first paint.
+            themeScript() is RSC-safe, so calling it here in a Server Component is
+            supported (#384).
+
+            ⚠️ `defaultPreset` must match the `preset` passed to <ThemeProvider> in
+            app/providers.tsx. This call colours the very first paint; the provider
+            takes over at hydration. If they disagree, every load flashes one
+            palette then snaps to the other. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: themeScript({ defaultPreset: 'brand-neutral' }),
+          }}
+        />
       </head>
       <body>
         <Providers>{children}</Providers>

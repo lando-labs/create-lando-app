@@ -123,6 +123,7 @@ try {
   // and the .mcp.json we wrote must actually resolve to a live server.
   await assertAgentDropIn(projectDir)
   await assertBriefingLayer(projectDir)
+  await assertStarterPage(projectDir)
   await assertMcpResolves(projectDir)
 
   console.log('\n✓ SMOKE TEST PASSED — #462 contract + AI wiring intact')
@@ -151,6 +152,50 @@ async function assertAgentDropIn(projectDir) {
     fail('agent file is present but its frontmatter has no `name: nextjs-lando-ds`')
   }
   log('agent ok: .claude/agents/nextjs-lando-ds.md')
+}
+
+/**
+ * The starter page's two load-bearing rules, checked statically (free — no boot):
+ *
+ *  1. **The page never holds a colour value.** Swatches fill from `var(--token)`
+ *     so they stay honest across preset + light/dark; a hex would be a lie the
+ *     moment the theme changed, and it would teach the copy-the-hex habit the
+ *     design system exists to prevent.
+ *  2. **Only contrast-passing presets are offered.** 4 of the DS's 7 fail WCAG AA
+ *     for the button text on them (lando-labs/lando-labs-design-system#542) —
+ *     offering them here would hand a new user an inaccessible app on day one.
+ */
+async function assertStarterPage(projectDir) {
+  log('Asserting starter page rules …')
+  const page = await readFile(join(projectDir, 'app', 'page.tsx'), 'utf8')
+  const palette = await readFile(join(projectDir, 'app', '_starter', 'palette.ts'), 'utf8')
+  const controls = await readFile(join(projectDir, 'app', '_starter', 'Controls.tsx'), 'utf8')
+
+  for (const [name, src] of [
+    ['app/page.tsx', page],
+    ['app/_starter/palette.ts', palette],
+    ['app/_starter/Controls.tsx', controls],
+  ]) {
+    const hex = src.match(/#[0-9a-fA-F]{6}\b/)
+    if (hex) fail(`${name} contains a hardcoded colour (${hex[0]}) — swatches must fill from var(--token)`)
+  }
+
+  const ACCESSIBLE = ['brand-neutral', 'lando', 'slate']
+  const FAILING = ['midnight', 'rose', 'sunset', 'forest']
+  for (const id of ACCESSIBLE) {
+    if (!palette.includes(`'${id}'`)) fail(`starter palette no longer offers the "${id}" preset`)
+  }
+  for (const id of FAILING) {
+    if (palette.includes(`'${id}'`)) {
+      fail(`starter palette offers "${id}", which fails WCAG AA contrast — see design-system#542`)
+    }
+  }
+
+  // The mirror is the whole point of section 3: it must read the real file.
+  if (!/readFile\([\s\S]{0,80}AGENTS\.md/.test(page)) {
+    fail('app/page.tsx no longer reads AGENTS.md — the brief mirror would drift from the brief')
+  }
+  log('starter page ok: no hex, 3 accessible presets, brief mirrored from AGENTS.md')
 }
 
 /**
