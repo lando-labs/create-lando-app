@@ -197,9 +197,9 @@ export function buildPalette(
  * these beat the defaults; being CSS, they paint on the first frame (no flash).
  * Setting a base re-skins its whole ramp via the DS's `color-mix` derivations.
  */
-export function emitLayerApp(pal: Palette): string {
+export function emitLayerApp(pal: Palette, tint: TintStrength = 'none'): string {
   const decl = (name: string, o: Oklch) => `    --color-${name}: ${formatOklch(o)};`
-  return [
+  const lines = [
     '@layer app {',
     '  :root {',
     '    /* Your brand palette. Change --color-primary and the whole ramp follows. */',
@@ -210,9 +210,22 @@ export function emitLayerApp(pal: Palette): string {
     decl('warning-base', pal.semantics.warning),
     decl('info-base', pal.semantics.info),
     '  }',
-    '}',
-    '',
-  ].join('\n')
+  ]
+  // Optional: lean the surfaces toward the brand, per mode. Emitted only when
+  // asked — a plain palette shouldn't carry surface overrides it doesn't use.
+  const tinted = deriveTintedSurfaces(pal.primary, tint)
+  if (tinted) {
+    for (const mode of ['light', 'dark'] as const) {
+      // Unquoted attribute value on purpose: valid CSS, and it dodges a
+      // syntax-highlighter quirk that renders a stray ';' inside quoted ones.
+      lines.push(`  :root[data-theme=${mode}] {`)
+      lines.push(`    /* Surfaces tinted toward your brand (${tint}) — same lightness, so contrast holds. */`)
+      for (const [token, o] of Object.entries(tinted[mode])) lines.push(decl(token, o))
+      lines.push('  }')
+    }
+  }
+  lines.push('}', '')
+  return lines.join('\n')
 }
 
 /** Live-preview helper: the DOM custom properties for the current palette. */
@@ -225,4 +238,95 @@ export function paletteVars(pal: Palette): Record<string, string> {
     '--color-warning-base': formatOklch(pal.semantics.warning),
     '--color-info-base': formatOklch(pal.semantics.info),
   }
+}
+
+// ---- Brand-tinted surfaces: theme-adjacent light + dark --------------------
+
+export type TintStrength = 'none' | 'subtle' | 'more'
+
+export const TINT_STRENGTHS: ReadonlyArray<{ id: TintStrength; label: string }> = [
+  { id: 'none', label: 'None' },
+  { id: 'subtle', label: 'Subtle' },
+  { id: 'more', label: 'More' },
+]
+
+type SurfaceMode = 'light' | 'dark'
+type SurfaceKind = 'fill' | 'text'
+
+/**
+ * The DS's surface-token LIGHTNESS scaffold, measured live from
+ * `@lando-labs/lando-ds@0.57.0` in both modes. The tint keeps each token's
+ * lightness and only swaps its hue to the brand's + adds a little chroma — so
+ * the whole theme leans warm/cool with the brand while every contrast ratio
+ * (which is lightness-driven) is preserved. Text carries less tint than fills.
+ *
+ * (Light `--color-background`/text/border follow the neutral ramp, but dark
+ * `--color-background`/`--color-surface` are separate literals — so the tint is
+ * emitted per-mode under `:root[data-theme='…']`, not once at `:root`.)
+ */
+const SURFACE_L: Record<SurfaceMode, ReadonlyArray<{ token: string; L: number; kind: SurfaceKind }>> = {
+  light: [
+    { token: 'background', L: 0.9839, kind: 'fill' },
+    { token: 'surface', L: 1.0, kind: 'fill' },
+    { token: 'text-primary', L: 0.3873, kind: 'text' },
+    { token: 'text-secondary', L: 0.5724, kind: 'text' },
+    { token: 'border-default', L: 0.8601, kind: 'fill' },
+    { token: 'border-subtle', L: 0.9271, kind: 'fill' },
+    { token: 'border-strong', L: 0.7928, kind: 'fill' },
+  ],
+  dark: [
+    { token: 'background', L: 0.18, kind: 'fill' },
+    { token: 'surface', L: 0.21, kind: 'fill' },
+    { token: 'text-primary', L: 0.9839, kind: 'text' },
+    { token: 'text-secondary', L: 0.9271, kind: 'text' },
+    { token: 'border-default', L: 0.38, kind: 'fill' },
+    { token: 'border-subtle', L: 0.31, kind: 'fill' },
+    { token: 'border-strong', L: 0.5, kind: 'fill' },
+  ],
+}
+
+/** How much chroma to mix in at each strength — fills carry more than text. */
+const TINT_CHROMA: Record<TintStrength, { fill: number; text: number }> = {
+  none: { fill: 0, text: 0 },
+  subtle: { fill: 0.01, text: 0.004 },
+  more: { fill: 0.022, text: 0.01 },
+}
+
+export interface TintedSurfaces {
+  light: Record<string, Oklch>
+  dark: Record<string, Oklch>
+}
+
+/**
+ * Brand-tinted surface tokens for both modes — `null` when strength is 'none'.
+ * L preserved (contrast-safe), H = the brand's hue, C = the strength.
+ */
+export function deriveTintedSurfaces(primary: Oklch, strength: TintStrength): TintedSurfaces | null {
+  if (strength === 'none') return null
+  const c = TINT_CHROMA[strength]
+  const build = (mode: SurfaceMode): Record<string, Oklch> => {
+    const out: Record<string, Oklch> = {}
+    for (const { token, L, kind } of SURFACE_L[mode]) {
+      out[token] = { L, C: kind === 'text' ? c.text : c.fill, H: primary.H }
+    }
+    return out
+  }
+  return { light: build('light'), dark: build('dark') }
+}
+
+/**
+ * Live-preview helper for the tint: the CURRENT mode's tinted surface tokens,
+ * to apply on the preview wrapper so its background/cards/borders lean toward
+ * the brand. Empty when strength is 'none'.
+ */
+export function surfaceVars(
+  primary: Oklch,
+  strength: TintStrength,
+  mode: SurfaceMode,
+): Record<string, string> {
+  const tinted = deriveTintedSurfaces(primary, strength)
+  if (!tinted) return {}
+  const out: Record<string, string> = {}
+  for (const [token, o] of Object.entries(tinted[mode])) out[`--color-${token}`] = formatOklch(o)
+  return out
 }

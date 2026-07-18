@@ -20,8 +20,8 @@ import {
   emitLayerApp,
   paletteVars,
   hexToOklch,
-  oklchToHex,
   type RampType,
+  type TintStrength,
 } from './color'
 
 const HEX_RE = /^#[0-9a-fA-F]{6}$/
@@ -36,6 +36,9 @@ export function ColorFoundation() {
   const [secondaryOn, secondaryHandlers] = useDisclosure(false)
   const [secondaryHex, setSecondaryHex] = useState('#0F766E')
   const [secondaryDraft, setSecondaryDraft] = useState('#0F766E')
+  // How hard the surfaces lean toward the brand. Subtle by default so the page
+  // shows the theme-adjacency off the bat; 'none' emits no surface overrides.
+  const [tint, setTint] = useState<TintStrength>('subtle')
 
   const accessible = useMemo(() => ensureAccessiblePrimary(primaryHex), [primaryHex])
   const pinnedSecondary = useMemo(
@@ -46,10 +49,8 @@ export function ColorFoundation() {
     () => buildPalette(accessible.oklch, ramp, pinnedSecondary),
     [accessible.oklch, ramp, pinnedSecondary],
   )
-  const artifact = useMemo(() => emitLayerApp(palette), [palette])
+  const artifact = useMemo(() => emitLayerApp(palette, tint), [palette, tint])
   const previewVars = useMemo(() => paletteVars(palette), [palette])
-  const resolvedSecondaryHex = oklchToHex(palette.secondary.L, palette.secondary.C, palette.secondary.H)
-  const resolvedAccentHex = oklchToHex(palette.accent.L, palette.accent.C, palette.accent.H)
 
   const commitPrimary = (value: string) => {
     setHexDraft(value)
@@ -94,12 +95,13 @@ export function ColorFoundation() {
         onPickSecondary={pickSecondary}
         onSecondaryDraftChange={commitSecondary}
         onSecondaryDraftBlur={() => setSecondaryDraft(secondaryHex)}
+        tint={tint}
+        onTintChange={setTint}
         artifact={artifact}
       />
       <PalettePreview
-        accessible={accessible}
-        resolvedSecondaryHex={resolvedSecondaryHex}
-        resolvedAccentHex={resolvedAccentHex}
+        primary={accessible.oklch}
+        tint={tint}
         previewVars={previewVars}
         showHarmonyCaption={customizeOpen}
       />

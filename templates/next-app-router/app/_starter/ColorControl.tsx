@@ -30,7 +30,16 @@ import {
   type SegmentedControlOption,
 } from '@lando-labs/lando-ds/components/SegmentedControl/SegmentedControl'
 import { QUICK_START } from './starter-data'
-import { deriveHarmony, oklchToHex, RAMP_TYPES, type AccessibleColor, type Oklch, type RampType } from './color'
+import {
+  deriveHarmony,
+  oklchToHex,
+  RAMP_TYPES,
+  TINT_STRENGTHS,
+  type AccessibleColor,
+  type Oklch,
+  type RampType,
+  type TintStrength,
+} from './color'
 
 const HEX_RE = /^#[0-9a-fA-F]{6}$/
 
@@ -81,6 +90,9 @@ export interface ColorControlProps {
   onSecondaryDraftChange: (value: string) => void
   onSecondaryDraftBlur: () => void
 
+  tint: TintStrength
+  onTintChange: (tint: TintStrength) => void
+
   artifact: string
 }
 
@@ -104,6 +116,8 @@ export function ColorControl({
   onPickSecondary,
   onSecondaryDraftChange,
   onSecondaryDraftBlur,
+  tint,
+  onTintChange,
   artifact,
 }: ColorControlProps) {
   const rampOptions: SegmentedControlOption[] = RAMP_TYPES.map((r) => {
@@ -300,6 +314,24 @@ export function ColorControl({
                   </Stack>
                 </Stack>
               )}
+            </Stack>
+
+            {/* Lean the whole theme — light AND dark — toward the brand. Off by
+                default; the emitted CSS only carries surface overrides when it's on. */}
+            <Stack gap="xs">
+              <Text size="sm" color="var(--color-text-secondary)">
+                Tint surfaces toward your brand
+              </Text>
+              <SegmentedControl
+                options={TINT_STRENGTHS.map((t) => ({ value: t.id, label: t.label }))}
+                value={tint}
+                onChange={(v) => onTintChange(v as TintStrength)}
+                fullWidth
+              />
+              <Text size="sm" color="var(--color-text-secondary)">
+                Nudges backgrounds, surfaces and borders toward your hue in both modes — same
+                lightness, so contrast holds. Error stays red.
+              </Text>
             </Stack>
           </Stack>
 
