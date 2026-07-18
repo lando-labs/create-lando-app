@@ -228,12 +228,50 @@ export function emitLayerApp(pal: Palette, tint: TintStrength = 'none'): string 
   return lines.join('\n')
 }
 
+/**
+ * The DS derives each brand role's ramp + interaction states from
+ * `var(--color-<role>)` with these oklab mixes. On `:root` (where the emitted
+ * CSS sets `--color-<role>`) they re-derive automatically. But a custom
+ * property's nested `var()` resolves at its DECLARATION scope — so setting
+ * `--color-<role>` on the preview WRAPPER doesn't re-derive the `:root`-declared
+ * tokens. We re-declare them on the wrapper so the preview's ramps + hover match
+ * what the emitted CSS actually produces (not the DS's default grey).
+ */
+const RAMP_DERIVATION: ReadonlyArray<[suffix: string, mix: string | null]> = [
+  ['lightest', 'white 90%'],
+  ['lighter', 'white 70%'],
+  ['light', 'white 45%'],
+  ['medium', null], // = the base colour itself
+  ['base', 'white 23%'],
+  ['dark', 'black 18%'],
+  ['darker', 'black 36%'],
+  ['darkest', 'black 52.5%'],
+  ['hover', 'white 22%'],
+  ['active', 'black 18%'],
+]
+
+function roleRampVars(role: string): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const [suffix, mix] of RAMP_DERIVATION) {
+    out[`--color-${role}-${suffix}`] = mix
+      ? `color-mix(in oklab, var(--color-${role}), ${mix})`
+      : `var(--color-${role})`
+  }
+  return out
+}
+
 /** Live-preview helper: the DOM custom properties for the current palette. */
 export function paletteVars(pal: Palette): Record<string, string> {
   return {
     '--color-primary': formatOklch(pal.primary),
     '--color-secondary': formatOklch(pal.secondary),
     '--color-accent': formatOklch(pal.accent),
+    // Re-declare the derived ramp/state tokens so they re-resolve against the
+    // wrapper's brand colours (see RAMP_DERIVATION) instead of inheriting the
+    // DS's :root-computed defaults.
+    ...roleRampVars('primary'),
+    ...roleRampVars('secondary'),
+    ...roleRampVars('accent'),
     '--color-success-base': formatOklch(pal.semantics.success),
     '--color-warning-base': formatOklch(pal.semantics.warning),
     '--color-info-base': formatOklch(pal.semantics.info),
