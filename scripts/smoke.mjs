@@ -154,48 +154,73 @@ async function assertAgentDropIn(projectDir) {
   log('agent ok: .claude/agents/nextjs-lando-ds.md')
 }
 
+/** True if a path exists — for asserting a file is GONE, not just readable. */
+async function exists(p) {
+  try {
+    await access(p)
+    return true
+  } catch {
+    return false
+  }
+}
+
 /**
- * The starter page's two load-bearing rules, checked statically (free — no boot):
+ * The starter page's load-bearing rules, checked statically (free — no boot).
  *
- *  1. **The page never holds a colour value.** Swatches fill from `var(--token)`
- *     so they stay honest across preset + light/dark; a hex would be a lie the
- *     moment the theme changed, and it would teach the copy-the-hex habit the
- *     design system exists to prevent.
- *  2. **Only contrast-passing presets are offered.** 4 of the DS's 7 fail WCAG AA
- *     for the button text on them (lando-labs/lando-labs-design-system#542) —
- *     offering them here would hand a new user an inaccessible app on day one.
+ * The page is a colour-foundation tool: pick/paste a primary → an accessible
+ * palette derived through the DS's own OKLCH maths → an `@layer app` block to
+ * paste. So unlike the old swatch page, hex here is legitimate INPUT (the picker
+ * seeds). What must stay true:
+ *
+ *  1. **Presets are gone.** The preset-data module (`palette.ts`) must not ship,
+ *     and nothing may import it — the old preset chooser was replaced wholesale.
+ *  2. **The colour engine is wired** and the artifact it emits is OKLCH var
+ *     tokens (never a hardcoded colour in the shipped app).
+ *  3. **Danger stays red** — no `--color-error` override is ever emitted.
+ *  4. **The palette shows on real DS components**, not token chips.
+ *  5. **The brief peek reads the real `AGENTS.md`**, so it can't drift.
  */
 async function assertStarterPage(projectDir) {
   log('Asserting starter page rules …')
   const page = await readFile(join(projectDir, 'app', 'page.tsx'), 'utf8')
-  const palette = await readFile(join(projectDir, 'app', '_starter', 'palette.ts'), 'utf8')
   const controls = await readFile(join(projectDir, 'app', '_starter', 'Controls.tsx'), 'utf8')
+  const color = await readFile(join(projectDir, 'app', '_starter', 'color.ts'), 'utf8')
 
-  for (const [name, src] of [
-    ['app/page.tsx', page],
-    ['app/_starter/palette.ts', palette],
-    ['app/_starter/Controls.tsx', controls],
-  ]) {
-    const hex = src.match(/#[0-9a-fA-F]{6}\b/)
-    if (hex) fail(`${name} contains a hardcoded colour (${hex[0]}) — swatches must fill from var(--token)`)
+  // 1 — presets removed.
+  if (await exists(join(projectDir, 'app', '_starter', 'palette.ts'))) {
+    fail('app/_starter/palette.ts still ships — the preset system was meant to be removed')
+  }
+  if (/from '\.\/palette'/.test(controls)) {
+    fail('Controls.tsx still imports ./palette — the dropped preset module')
   }
 
-  const ACCESSIBLE = ['brand-neutral', 'lando', 'slate']
-  const FAILING = ['midnight', 'rose', 'sunset', 'forest']
-  for (const id of ACCESSIBLE) {
-    if (!palette.includes(`'${id}'`)) fail(`starter palette no longer offers the "${id}" preset`)
+  // 2 — the colour engine is wired, emitting an OKLCH @layer app block.
+  for (const fn of ['ensureAccessiblePrimary', 'buildPalette', 'emitLayerApp', 'paletteVars']) {
+    if (!controls.includes(fn)) fail(`Controls.tsx no longer uses ${fn} — the colour engine is unwired`)
   }
-  for (const id of FAILING) {
-    if (palette.includes(`'${id}'`)) {
-      fail(`starter palette offers "${id}", which fails WCAG AA contrast — see design-system#542`)
+  if (!/formatOklch/.test(color) || !/@layer app/.test(color)) {
+    fail('color.ts no longer emits an @layer app / OKLCH block — the copy-paste artifact broke')
+  }
+
+  // 3 — danger stays the DS default red.
+  if (/--color-error/.test(color)) {
+    fail('color.ts emits a --color-error override — danger must stay the DS default red')
+  }
+
+  // 4 — palette shown on real components.
+  for (const comp of ['Button', 'Alert']) {
+    if (!controls.includes(comp)) {
+      fail(`Controls.tsx no longer renders <${comp}> — the palette must show on real DS components`)
     }
   }
 
-  // The mirror is the whole point of section 3: it must read the real file.
+  // 5 — the peek reads the real file; no placeholder survives into the page.
   if (!/readFile\([\s\S]{0,80}AGENTS\.md/.test(page)) {
-    fail('app/page.tsx no longer reads AGENTS.md — the brief mirror would drift from the brief')
+    fail('app/page.tsx no longer reads AGENTS.md — the brief peek would drift from the brief')
   }
-  log('starter page ok: no hex, 3 accessible presets, brief mirrored from AGENTS.md')
+  if (/\{\{[A-Z_]+\}\}/.test(page)) fail('app/page.tsx still contains an unsubstituted {{PLACEHOLDER}}')
+
+  log('starter page ok: presets removed, engine wired, OKLCH artifact, error stays red, palette on real components')
 }
 
 /**
@@ -216,10 +241,11 @@ async function assertBriefingLayer(projectDir) {
     }
   }
 
-  // Canonical brief.
+  // Canonical brief. The palette rule is repointed at globals.css / @layer app
+  // (the copy-paste target), not the old two-file preset dance.
   const agents = await read('AGENTS.md')
-  if (!/app\/providers\.tsx/.test(agents)) {
-    fail('AGENTS.md has no `app/providers.tsx` theme rule — the human→AI loop is open')
+  if (!/app\/globals\.css/.test(agents) || !/@layer app/.test(agents)) {
+    fail('AGENTS.md no longer points the brand-palette rule at app/globals.css / @layer app — the theme rule wasn’t repointed')
   }
 
   // Pointers. CLAUDE.md must actually import the brief, not paraphrase it.

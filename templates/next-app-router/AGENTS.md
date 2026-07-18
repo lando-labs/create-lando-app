@@ -41,17 +41,21 @@ There is a `nextjs-lando-ds` agent set up for this project (Claude Code:
 
 ## Theme: read the file, don't guess
 
-**This app's theme preset is declared in `app/providers.tsx`.** Read it before any
-color decision — it determines what every token resolves to.
+**This app's brand palette lives in `app/globals.css`, as CSS custom properties
+inside the `@layer app` block** — `--color-primary`, `--color-secondary`,
+`--color-accent`, and tuned `--color-success-base` / `--color-warning-base` /
+`--color-info-base`. Set `--color-primary` and the whole ramp follows; the DS
+derives every shade from these role tokens. `error` is deliberately never
+overridden — danger stays the DS default red.
 
-If the human asks to change the theme, it takes **two edits that must agree**, or
-the app flashes the wrong palette on every load:
+`app/providers.tsx` stays on the `'brand-neutral'` preset as the base your
+`@layer app` overrides sit on top of. If the human asks to change the palette,
+edit `globals.css`, not `providers.tsx` — and don't touch `app/layout.tsx`. CSS
+custom properties paint on the first frame, so there's no flash to manage and
+no second file to keep in sync.
 
-- `app/providers.tsx` → `<ThemeProvider preset="…">`
-- `app/layout.tsx` → `themeScript({ defaultPreset: '…' })`
-
-Never mirror the theme's *values* into this file or into your own notes. Read
-`providers.tsx` each time. That way nothing has to be kept in sync when the human
+Never mirror the palette's *values* into this file or into your own notes. Read
+`globals.css` each time. That way nothing has to be kept in sync when the human
 changes it.
 
 ## Don't break the CSS wiring
@@ -72,8 +76,8 @@ The reasoning is commented in `app/globals.css` if you need it.
 | --- | --- |
 | `app/page.tsx` | The getting-started page. Replace it — that's the point. |
 | `app/layout.tsx` | HTML shell, CSS import order, anti-flash theme script |
-| `app/providers.tsx` | **The theme preset** |
-| `app/globals.css` | Your CSS. App reset lives in `@layer app-reset`. |
+| `app/providers.tsx` | The theme base preset (`'brand-neutral'`) |
+| `app/globals.css` | Your CSS. App reset lives in `@layer app-reset`; **your brand palette lives in `@layer app`**. |
 | `AGENTS.md` | This brief |
 
 ## Reference (not instructions)

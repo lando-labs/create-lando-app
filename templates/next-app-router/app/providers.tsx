@@ -3,18 +3,15 @@
 import { ThemeProvider } from '@lando-labs/lando-ds'
 
 /**
- * THE THEME LIVES HERE.
+ * The neutral base. Your brand colours live in `app/globals.css`, as
+ * `@layer app` custom properties (`--color-primary`, `--color-secondary`,
+ * `--color-accent`, plus the tuned semantics) — see the getting-started page.
+ * Those CSS custom properties paint on the first frame, same as this preset,
+ * so there's nothing here to keep in sync when you change your palette.
  *
- * `preset` is the single source of truth for this app's palette. Change it and
- * every design token re-skins. Your AI reads this file rather than keeping its own
- * copy of your colours, so changing it here is all you have to do.
- *
- * ⚠️ It must match `themeScript({ defaultPreset })` in `app/layout.tsx`. That call
- * paints the preset before React hydrates; if the two disagree, every page load
- * flashes one palette and then snaps to the other.
- *
- * Available presets that meet WCAG AA contrast: 'brand-neutral' (default),
- * 'lando', 'slate'.
+ * `preset` stays 'brand-neutral': it's the base your `@layer app` overrides
+ * sit on top of. Swapping it for a different preset still works (the two are
+ * independent), but the getting-started flow assumes this base.
  */
 const THEME_PRESET = 'brand-neutral'
 
