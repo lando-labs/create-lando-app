@@ -214,6 +214,13 @@ async function assertStarterPage(projectDir) {
     fail('color.ts emits a --color-error override — danger must stay the DS default red')
   }
 
+  // 3b — brand-tinted surfaces stay mode-scoped. The dark background is a
+  // separate literal (not the neutral ramp), so an un-scoped :root override
+  // would break dark mode — the tint MUST emit per-mode `data-theme` blocks.
+  if (!/surfaceVars/.test(color) || !/data-theme/.test(color)) {
+    fail('color.ts no longer provides mode-scoped surface tint (surfaceVars + data-theme) — theme-adjacency broke')
+  }
+
   // 4 — palette shown on real components.
   for (const comp of ['Button', 'Alert']) {
     if (!starterSrc.includes(comp)) {
