@@ -6,24 +6,28 @@
  *
  * Delete this folder when you replace the starter page.
  */
-import { useEffect, useState } from 'react'
+import { useMemo, useState, type CSSProperties, type ChangeEvent } from 'react'
 import { useTheme } from '@lando-labs/lando-ds'
+import { useDisclosure, useMounted } from '@lando-labs/lando-ds/hooks'
 import { Button } from '@lando-labs/lando-ds/components/Button/Button'
-import { PALETTE, PRESETS, type PresetId } from './palette'
-
-/**
- * True only after hydration.
- *
- * Anything whose value the SERVER cannot know — the OS colour-scheme preference,
- * a preset persisted in localStorage — must not be rendered until this is true.
- * The server would guess, the client would correct it, and React reports the
- * difference as a hydration error. Render something stable until mounted.
- */
-function useMounted(): boolean {
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
-  return mounted
-}
+import { Input } from '@lando-labs/lando-ds/components/Input/Input'
+import { Switch } from '@lando-labs/lando-ds/components/Switch/Switch'
+import { Badge } from '@lando-labs/lando-ds/components/Badge/Badge'
+import { Alert } from '@lando-labs/lando-ds/components/Alert/Alert'
+import { ColorSwatch } from '@lando-labs/lando-ds/components/ColorSwatch/ColorSwatch'
+import { CodeBlock } from '@lando-labs/lando-ds/components/CodeBlock/CodeBlock'
+import { Divider } from '@lando-labs/lando-ds/components/Divider/Divider'
+import {
+  ensureAccessiblePrimary,
+  buildPalette,
+  deriveHarmony,
+  emitLayerApp,
+  paletteVars,
+  hexToOklch,
+  oklchToHex,
+  RAMP_TYPES,
+  type RampType,
+} from './color'
 
 /** Toggle light/dark. Sits above the palette, because it re-colours it. */
 export function ThemeToggle() {
@@ -39,202 +43,332 @@ export function ThemeToggle() {
   )
 }
 
-function CopyButton({ value, label }: { value: string; label: string }) {
-  const [done, setDone] = useState(false)
-  return (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={() => {
-        void navigator.clipboard?.writeText(value)
-        setDone(true)
-        setTimeout(() => setDone(false), 1200)
-      }}
-    >
-      {done ? 'Copied' : label}
-    </Button>
-  )
+const HEX_RE = /^#[0-9a-fA-F]{6}$/
+
+/**
+ * Pleasant, AA-passing starting points — each clears 4.5:1 white-text
+ * contrast as-is (checked against the DS's own contrast maths), so picking
+ * one never trips the correction path. Spread across hue so there's a
+ * reasonable starting point regardless of taste.
+ */
+const QUICK_START: ReadonlyArray<{ hex: string; name: string }> = [
+  { hex: '#4F46E5', name: 'Indigo' },
+  { hex: '#0F766E', name: 'Teal' },
+  { hex: '#BE123C', name: 'Rose' },
+  { hex: '#C2410C', name: 'Orange' },
+  { hex: '#334155', name: 'Slate' },
+]
+
+// Fixed affordance sizes (a colour well, a swatch dot) — an intrinsic control
+// dimension, like an icon, not layout rhythm, so an explicit rem is correct
+// here rather than a spacing-scale token.
+const swatchDotStyle = (hex: string, active: boolean): CSSProperties => ({
+  width: '2rem',
+  height: '2rem',
+  borderRadius: 'var(--radius-full)',
+  border: active ? '2px solid var(--color-text-primary)' : '1px solid var(--color-border-default)',
+  background: hex,
+  cursor: 'pointer',
+  padding: 0,
+})
+
+const colorInputStyle: CSSProperties = {
+  width: '3rem',
+  height: '2.5rem',
+  border: '1px solid var(--color-border-default)',
+  borderRadius: 'var(--radius-sm)',
+  padding: 0,
+  background: 'none',
+  cursor: 'pointer',
 }
 
 /**
- * The swatch grid.
- *
- * Each chip's background is `var(--token)` — resolved by the browser, so it is
- * always the real colour for the current preset and mode. Clicking copies the
- * TOKEN PATH, never a hex: copying hex out of a design system is the exact
- * failure the tokens exist to prevent, so there's no affordance for it.
+ * The colour-foundation control: pick or paste a primary, choose how
+ * secondary + accent relate to it, optionally pin a secondary, and get back
+ * the `@layer app` block to paste into `globals.css`. Below it, the same
+ * palette re-colours real DS components live — so what you're picking is
+ * never a swatch in the abstract, it's the actual Button/Badge/Alert.
  */
-export function Palette() {
-  const [copied, setCopied] = useState<string | null>(null)
+export function ColorFoundation() {
+  const [primaryHex, setPrimaryHex] = useState(QUICK_START[0].hex) // committed, drives the palette
+  const [hexDraft, setHexDraft] = useState(QUICK_START[0].hex) // the text field's live value; may be mid-edit
+  const [ramp, setRamp] = useState<RampType>('tonal')
+  const [secondaryOn, secondaryHandlers] = useDisclosure(false)
+  const [secondaryHex, setSecondaryHex] = useState('#0F766E')
+  const [secondaryDraft, setSecondaryDraft] = useState('#0F766E')
+
+  const accessible = useMemo(() => ensureAccessiblePrimary(primaryHex), [primaryHex])
+  const pinnedSecondary = useMemo(
+    () => (secondaryOn ? hexToOklch(secondaryHex) : undefined),
+    [secondaryOn, secondaryHex],
+  )
+  const palette = useMemo(
+    () => buildPalette(accessible.oklch, ramp, pinnedSecondary),
+    [accessible.oklch, ramp, pinnedSecondary],
+  )
+  const artifact = useMemo(() => emitLayerApp(palette), [palette])
+  const previewVars = useMemo(() => paletteVars(palette), [palette])
+
+  const commitPrimary = (value: string) => {
+    setHexDraft(value)
+    if (HEX_RE.test(value)) setPrimaryHex(value)
+  }
+
+  const commitSecondary = (value: string) => {
+    setSecondaryDraft(value)
+    if (HEX_RE.test(value)) setSecondaryHex(value)
+  }
+
+  const applyFix = () => {
+    setPrimaryHex(accessible.hex)
+    setHexDraft(accessible.hex)
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-6)' }}>
-      {PALETTE.map((row) => (
-        <div key={row.family}>
-          <div style={{ marginBottom: 'var(--spacing-2)' }}>
-            <strong>{row.family}</strong>{' '}
-            <span style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)' }}>
-              {row.note}
-            </span>
+      {/* The control. */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-4)' }}>
+        <div style={{ display: 'flex', gap: 'var(--spacing-4)', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          <label
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 'var(--spacing-1)',
+              fontSize: 'var(--text-sm)',
+              color: 'var(--color-text-secondary)',
+            }}
+          >
+            Primary
+            {/* Shows the colour you chose, not the corrected one — the well and
+                hex field reflect your input; the preview below reflects the safe
+                output; the "Fix contrast" button bridges the two. */}
+            <input
+              type="color"
+              value={primaryHex}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                setPrimaryHex(e.target.value)
+                setHexDraft(e.target.value)
+              }}
+              aria-label="Pick primary colour"
+              style={colorInputStyle}
+            />
+          </label>
+          <div style={{ flex: 1, minWidth: '12rem' }}>
+            <Input
+              id="primary-hex"
+              name="primary-hex"
+              label="Hex"
+              value={hexDraft}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => commitPrimary(e.target.value)}
+              onBlur={() => setHexDraft(primaryHex)}
+              placeholder="#4F46E5"
+              error={hexDraft && !HEX_RE.test(hexDraft) ? 'Needs a 6-digit hex, e.g. #4F46E5' : undefined}
+            />
           </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--spacing-2)' }}>
-            {row.swatches.map((s) => (
+        </div>
+
+        {/* A11y feedback: quiet when it already passes, actionable when it didn't. */}
+        {accessible.corrected ? (
+          <Alert variant="warning" inline title="Contrast adjusted">
+            That colour didn&rsquo;t clear 4.5:1 white-text contrast, so it&rsquo;s been darkened to{' '}
+            <code style={{ fontFamily: 'var(--font-mono)' }}>{accessible.hex}</code>{' '}
+            ({accessible.ratioOnWhite.toFixed(2)}:1) — same hue, same chroma, just readable.
+            <div style={{ marginTop: 'var(--spacing-2)' }}>
+              <Button size="sm" variant="outline" onClick={applyFix}>
+                Fix contrast
+              </Button>
+            </div>
+          </Alert>
+        ) : (
+          <div>
+            <Badge variant="success" size="sm">
+              AA ✓ {accessible.ratioOnWhite.toFixed(2)}:1 on white
+            </Badge>
+          </div>
+        )}
+
+        <div>
+          <div
+            style={{
+              fontSize: 'var(--text-sm)',
+              color: 'var(--color-text-secondary)',
+              marginBottom: 'var(--spacing-2)',
+            }}
+          >
+            No colour in mind? Start here.
+          </div>
+          <div style={{ display: 'flex', gap: 'var(--spacing-2)', flexWrap: 'wrap' }}>
+            {QUICK_START.map((s) => (
               <button
-                key={s.token}
+                key={s.hex}
                 type="button"
-                title={`Copy ${s.token}`}
-                aria-label={`Copy token ${s.token}`}
                 onClick={() => {
-                  void navigator.clipboard?.writeText(`var(${s.token})`)
-                  setCopied(s.token)
-                  setTimeout(() => setCopied(null), 1200)
+                  setPrimaryHex(s.hex)
+                  setHexDraft(s.hex)
                 }}
-                style={{
-                  cursor: 'pointer',
-                  border: '1px solid var(--color-border-default)',
-                  borderRadius: 'var(--radius-md)',
-                  background: 'var(--color-surface-elevated)',
-                  padding: 'var(--spacing-2)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 'var(--spacing-1)',
-                  minWidth: '5.5rem',
-                  textAlign: 'left',
-                  font: 'inherit',
-                  color: 'var(--color-text-primary)',
-                }}
-              >
-                {/* The fill is the live custom property — never a value from JS. */}
-                <span
-                  aria-hidden
-                  style={{
-                    display: 'block',
-                    height: '2.5rem',
-                    borderRadius: 'var(--radius-sm)',
-                    border: '1px solid var(--color-border-subtle)',
-                    background: `var(${s.token})`,
-                  }}
-                />
-                <span style={{ fontSize: 'var(--text-xs)' }}>{s.step}</span>
-                <span
-                  style={{
-                    fontSize: 'var(--text-xs)',
-                    color: 'var(--color-text-secondary)',
-                    fontFamily: 'var(--font-mono)',
-                  }}
-                >
-                  {copied === s.token ? 'copied' : s.token.replace('--color-', '')}
-                </span>
-              </button>
+                aria-label={`Use ${s.name}`}
+                title={s.name}
+                style={swatchDotStyle(s.hex, primaryHex === s.hex)}
+              />
             ))}
           </div>
         </div>
-      ))}
-      <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>
-        Click a swatch to copy its token. Use <code>var(--color-…)</code> in your CSS —
-        never the hex. The token follows the theme; a hex doesn&rsquo;t.
-      </p>
-    </div>
-  )
-}
 
-/**
- * Preset chooser — the page proposes, the file disposes.
- *
- * Clicking previews the preset live (the swatches above re-colour instantly,
- * because they read `var()`). But a preview is all it is: refresh and it's gone,
- * and your AI reads `providers.tsx`, not this page's runtime state. To keep a
- * preset you paste two lines — and they must agree, or the app paints the old
- * palette for a frame on every load before snapping to the new one.
- */
-export function PresetChooser() {
-  const { themePreset, setThemePreset } = useTheme()
-  const [picked, setPicked] = useState<PresetId | null>(null)
-  const mounted = useMounted()
-  // Until mounted, show the declared default — the server has no way to know a
-  // preset the user persisted last visit, and guessing would be a hydration error.
-  const active = mounted ? ((picked ?? themePreset ?? 'brand-neutral') as string) : 'brand-neutral'
-
-  const providers = `<ThemeProvider preset="${active}">`
-  const layout = `themeScript({ defaultPreset: '${active}' })`
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-4)' }}>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--spacing-2)' }}>
-        {PRESETS.map((p) => (
-          <Button
-            key={p.id}
-            variant={active === p.id ? 'primary' : 'outline'}
-            size="sm"
-            onClick={() => {
-              setThemePreset(p.id)
-              setPicked(p.id)
+        <div>
+          <div
+            style={{
+              fontSize: 'var(--text-sm)',
+              color: 'var(--color-text-secondary)',
+              marginBottom: 'var(--spacing-2)',
             }}
-            title={p.note}
           >
-            {p.name}
-          </Button>
-        ))}
-      </div>
-
-      <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)', margin: 0 }}>
-        This is a <strong>preview</strong> — a refresh resets it. To keep{' '}
-        <code>{active}</code>, make these two edits. They have to match, or the app
-        flashes the old palette on every load.
-      </p>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-3)' }}>
-        <div>
-          <div style={{ fontSize: 'var(--text-sm)', marginBottom: 'var(--spacing-1)' }}>
-            <code style={{ fontFamily: 'var(--font-mono)' }}>app/providers.tsx</code>
+            How secondary + accent relate to primary
           </div>
-          <div style={{ display: 'flex', gap: 'var(--spacing-2)', alignItems: 'center' }}>
-            <code
+          <div style={{ display: 'flex', gap: 'var(--spacing-2)', flexWrap: 'wrap' }}>
+            {RAMP_TYPES.map((r) => {
+              const preview = deriveHarmony(accessible.oklch, r.id, pinnedSecondary)
+              return (
+                <Button
+                  key={r.id}
+                  variant={ramp === r.id ? 'primary' : 'outline'}
+                  size="sm"
+                  onClick={() => setRamp(r.id)}
+                  title={r.blurb}
+                >
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--spacing-2)' }}>
+                    {r.label}
+                    <ColorSwatch
+                      size="sm"
+                      shape="circle"
+                      color={oklchToHex(preview.secondary.L, preview.secondary.C, preview.secondary.H)}
+                      aria-label={`${r.label}: secondary preview`}
+                    />
+                    <ColorSwatch
+                      size="sm"
+                      shape="circle"
+                      color={oklchToHex(preview.accent.L, preview.accent.C, preview.accent.H)}
+                      aria-label={`${r.label}: accent preview`}
+                    />
+                  </span>
+                </Button>
+              )
+            })}
+          </div>
+        </div>
+
+        <div>
+          <Switch
+            label="Pin a secondary colour"
+            checked={secondaryOn}
+            onChange={() => secondaryHandlers.toggle()}
+          />
+          {secondaryOn ? (
+            <div
               style={{
-                flex: 1,
-                fontFamily: 'var(--font-mono)',
-                fontSize: 'var(--text-sm)',
-                background: 'var(--color-surface-secondary)',
-                border: '1px solid var(--color-border-subtle)',
-                borderRadius: 'var(--radius-sm)',
-                padding: 'var(--spacing-2)',
-                overflowX: 'auto',
+                display: 'flex',
+                gap: 'var(--spacing-4)',
+                alignItems: 'flex-end',
+                marginTop: 'var(--spacing-3)',
+                flexWrap: 'wrap',
               }}
             >
-              {providers}
-            </code>
-            <CopyButton value={providers} label="Copy" />
-          </div>
+              <label
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 'var(--spacing-1)',
+                  fontSize: 'var(--text-sm)',
+                  color: 'var(--color-text-secondary)',
+                }}
+              >
+                Secondary
+                <input
+                  type="color"
+                  value={HEX_RE.test(secondaryHex) ? secondaryHex : '#0F766E'}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                    setSecondaryHex(e.target.value)
+                    setSecondaryDraft(e.target.value)
+                  }}
+                  aria-label="Pick secondary colour"
+                  style={colorInputStyle}
+                />
+              </label>
+              <div style={{ flex: 1, minWidth: '12rem' }}>
+                <Input
+                  id="secondary-hex"
+                  name="secondary-hex"
+                  label="Hex"
+                  value={secondaryDraft}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => commitSecondary(e.target.value)}
+                  onBlur={() => setSecondaryDraft(secondaryHex)}
+                  placeholder="#0F766E"
+                  error={
+                    secondaryDraft && !HEX_RE.test(secondaryDraft)
+                      ? 'Needs a 6-digit hex, e.g. #0F766E'
+                      : undefined
+                  }
+                />
+              </div>
+            </div>
+          ) : (
+            <p
+              style={{
+                margin: 0,
+                marginTop: 'var(--spacing-2)',
+                fontSize: 'var(--text-sm)',
+                color: 'var(--color-text-secondary)',
+              }}
+            >
+              Off by default — accent derives from primary alone.
+            </p>
+          )}
         </div>
 
         <div>
-          <div style={{ fontSize: 'var(--text-sm)', marginBottom: 'var(--spacing-1)' }}>
-            <code style={{ fontFamily: 'var(--font-mono)' }}>app/layout.tsx</code>
-          </div>
-          <div style={{ display: 'flex', gap: 'var(--spacing-2)', alignItems: 'center' }}>
-            <code
-              style={{
-                flex: 1,
-                fontFamily: 'var(--font-mono)',
-                fontSize: 'var(--text-sm)',
-                background: 'var(--color-surface-secondary)',
-                border: '1px solid var(--color-border-subtle)',
-                borderRadius: 'var(--radius-sm)',
-                padding: 'var(--spacing-2)',
-                overflowX: 'auto',
-              }}
-            >
-              {layout}
-            </code>
-            <CopyButton value={layout} label="Copy" />
-          </div>
+          <p style={{ marginTop: 0, marginBottom: 'var(--spacing-2)', fontSize: 'var(--text-sm)' }}>
+            Paste into <code style={{ fontFamily: 'var(--font-mono)' }}>app/globals.css</code>, inside the{' '}
+            <code style={{ fontFamily: 'var(--font-mono)' }}>@layer app</code> block already there. No reroll
+            needed — the same inputs always build the same palette.
+          </p>
+          <CodeBlock code={artifact} language="css" title="app/globals.css — inside @layer app" />
         </div>
       </div>
 
-      <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)', margin: 0 }}>
-        Only three presets are offered here — the design system ships more, but
-        these are the ones whose button text passes WCAG AA contrast today.
-      </p>
+      <Divider label="Preview" />
+
+      {/* The result, on real components. `previewVars` is applied as inline
+          style on this wrapper, so everything inside re-colours from the
+          palette above — live, not a screenshot. */}
+      <div style={{ ...previewVars, display: 'flex', flexDirection: 'column', gap: 'var(--spacing-4)' } as CSSProperties}>
+        {/* The three brand roles, shown truthfully as swatches — each reads its
+            own token, and the DS derives a full ramp from every one. */}
+        <div style={{ display: 'flex', gap: 'var(--spacing-4)', flexWrap: 'wrap', alignItems: 'center' }}>
+          <ColorSwatch color="var(--color-primary)" label="Primary" />
+          <ColorSwatch color="var(--color-secondary)" label="Secondary" />
+          <ColorSwatch color="var(--color-accent)" label="Accent" />
+        </div>
+        {/* On real components — proof the tokens flow into the DS, not just
+            swatches. Only `primary` demos a brand colour on a filled button:
+            the DS's `secondary`/`outline` variants are intentionally neutral. */}
+        <div style={{ display: 'flex', gap: 'var(--spacing-3)', flexWrap: 'wrap', alignItems: 'center' }}>
+          <Button variant="primary">Primary action</Button>
+          <Button variant="outline">Outline</Button>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-2)' }}>
+          <Alert variant="success" inline title="Success">
+            Harmonised toward your brand — still reads green.
+          </Alert>
+          <Alert variant="warning" inline title="Warning">
+            Nudged toward your brand — still reads amber.
+          </Alert>
+          <Alert variant="info" inline title="Info">
+            Tuned toward your brand — still reads blue.
+          </Alert>
+          <Alert variant="error" inline title="Error">
+            Untouched. Danger stays red — there&rsquo;s no override for it.
+          </Alert>
+        </div>
+      </div>
     </div>
   )
 }

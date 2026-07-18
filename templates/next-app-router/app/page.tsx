@@ -1,22 +1,21 @@
 // The getting-started page.
 //
-// This is a Server Component — it reads your AGENTS.md off disk at build time and
-// mirrors it below, so the brief your AI reads and the brief you read are the same
-// file. Only the interactive parts (theme toggle, swatches, preset chooser) are
-// client components, in `./_starter`.
+// One path, thin frame: iron out your colours, hand off to your AI. This is a
+// Server Component — it reads your AGENTS.md off disk at build time for the
+// §2 brief peek. Only the interactive parts (theme toggle, colour foundation)
+// are client components, in `./_starter`.
 //
-// This page is meant to be deleted. Replace it with your app — everything it shows
-// you is either in a file you now know about, or one MCP query away.
+// This page is meant to be deleted. Replace it with your app — everything it
+// shows you is either in a file you now know about, or one MCP query away.
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { Card } from '@lando-labs/lando-ds/components/Card/Card'
-import { CardBody } from '@lando-labs/lando-ds/components/Card/CardBody'
 import { CardHeader } from '@lando-labs/lando-ds/components/Card/CardHeader'
 import { CardTitle } from '@lando-labs/lando-ds/components/Card/CardTitle'
-import { Markdown } from '@lando-labs/lando-ds/components/Markdown/Markdown'
+import { CardBody } from '@lando-labs/lando-ds/components/Card/CardBody'
 import { Divider } from '@lando-labs/lando-ds/components/Divider/Divider'
 import meta from '@lando-labs/lando-ds/meta'
-import { ThemeToggle, Palette, PresetChooser } from './_starter/Controls'
+import { ThemeToggle, ColorFoundation } from './_starter/Controls'
 
 /** The brief, read from disk. Absent when scaffolded with `--no-mcp`. */
 async function readBrief(): Promise<string | null> {
@@ -27,19 +26,29 @@ async function readBrief(): Promise<string | null> {
   }
 }
 
-const FILE_MAP: Array<{ path: string; owns: string; href?: string }> = [
-  {
-    path: 'app/page.tsx',
-    owns: 'This page. Replace it — that’s the point.',
-    href: 'https://nextjs.org/docs/app/building-your-application/routing/pages',
-  },
-  {
-    path: 'app/layout.tsx',
-    owns: 'The HTML shell, CSS import order, and the anti-flash theme script.',
-    href: 'https://nextjs.org/docs/app/building-your-application/routing/layouts-and-templates',
-  },
-  { path: 'app/providers.tsx', owns: 'The theme preset. One line, and it decides every colour above.' },
-  { path: 'app/globals.css', owns: 'Your CSS. The reset lives in @layer app-reset so it can’t flatten components.' },
+/**
+ * A slim peek at the brief, not the brief itself. Pulls the paragraph under
+ * "## What this project is" (usually two sentences), flattened to plain text
+ * — enough to show your AI has real context, not enough to turn this page
+ * into a scrollbox of markdown.
+ */
+function briefPeek(brief: string): string | null {
+  const match = brief.match(/##\s*What this project is\s*\n+([\s\S]*?)(?=\n\s*\n|$)/)
+  if (!match) return null
+  return match[1].replace(/\s+/g, ' ').replace(/[*`]/g, '').trim()
+}
+
+const BRIEF_HIGHLIGHTS = [
+  'Reads the DS via MCP instead of assuming an API from memory.',
+  'Server Components by default; `\'use client\'` only for interactivity.',
+  'No Tailwind, no hardcoded colors — design tokens only.',
+]
+
+const FILE_MAP: Array<{ path: string; owns: string }> = [
+  { path: 'app/page.tsx', owns: 'This page. Replace it — that’s the point.' },
+  { path: 'app/layout.tsx', owns: 'The HTML shell and page metadata.' },
+  { path: 'app/providers.tsx', owns: 'The theme base. Your brand palette lives in globals.css.' },
+  { path: 'app/globals.css', owns: 'Your CSS — including the @layer app block you just copied into.' },
   { path: 'AGENTS.md', owns: 'What your AI is told about this project. Yours to edit.' },
 ]
 
@@ -51,12 +60,13 @@ const PROMPTS = [
 
 export default async function HomePage() {
   const brief = await readBrief()
+  const peek = brief ? briefPeek(brief) : null
   const dsVersion = meta.package?.version ?? 'unknown'
 
   return (
     <main
       style={{
-        maxWidth: '60rem',
+        maxWidth: '48rem',
         margin: '0 auto',
         padding: 'var(--spacing-8) var(--spacing-6)',
         display: 'flex',
@@ -64,8 +74,8 @@ export default async function HomePage() {
         gap: 'var(--spacing-8)',
       }}
     >
-      {/* 0 — Identity. A status line, not a hero. The toggle sits here because it
-          re-colours the palette directly below it. */}
+      {/* 0 — Orient. A status line, not a hero. The toggle sits here because
+          it re-colours everything below it. */}
       <header
         style={{
           display: 'flex',
@@ -91,12 +101,10 @@ export default async function HomePage() {
         <ThemeToggle />
       </header>
 
-      {/* 1 — The palette. The lead: these are your app's actual colours, read live
-          from the CSS custom properties. */}
+      {/* 1 — Your palette. Iron out your colours, see them on real
+          components, copy the CSS. */}
       <section>
-        <h2 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--spacing-1)' }}>
-          Your colours
-        </h2>
+        <h2 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--spacing-1)' }}>Your palette</h2>
         <p
           style={{
             marginTop: 0,
@@ -104,139 +112,48 @@ export default async function HomePage() {
             color: 'var(--color-text-secondary)',
           }}
         >
-          Live from the design system — not a screenshot. Toggle the theme or switch
-          the preset and every chip below follows.
+          Pick or paste a primary. We keep it readable, derive the rest, and show you the result on the
+          actual design system — not a screenshot.
         </p>
-        <Palette />
+        <ColorFoundation />
       </section>
 
       <Divider />
 
-      {/* 2 — The control for section 1. */}
+      {/* 2 — Build with your AI. A slim brief, then the call-to-action. */}
       <section>
-        <h2 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--spacing-1)' }}>
-          Make it yours
-        </h2>
-        <p
-          style={{
-            marginTop: 0,
-            marginBottom: 'var(--spacing-4)',
-            color: 'var(--color-text-secondary)',
-          }}
-        >
-          Try a preset. Keep it by pasting two lines into your source.
-        </p>
-        <PresetChooser />
-      </section>
-
-      <Divider />
-
-      {/* 3 — The mirror. Same file the AI reads; edit it and refresh to see this
-          change. That IS the lesson: one brief, two readers, no copies to sync. */}
-      <section>
-        <h2 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--spacing-1)' }}>
-          What your AI already knows
-        </h2>
+        <h2 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--spacing-1)' }}>Build with your AI</h2>
         {brief ? (
           <>
             <p
               style={{
                 marginTop: 0,
-                marginBottom: 'var(--spacing-4)',
+                marginBottom: peek ? 'var(--spacing-2)' : 'var(--spacing-4)',
                 color: 'var(--color-text-secondary)',
               }}
             >
-              This is <code>AGENTS.md</code>, rendered from the same file your assistant
-              reads. Edit it, refresh, and your words show up here. Nothing to keep in
-              sync — there&rsquo;s only one copy.
+              Your AI reads <code>AGENTS.md</code> before it writes code. {peek}
             </p>
-            <Card variant="elevated">
-              <CardBody>
-                <div style={{ maxHeight: '22rem', overflowY: 'auto' }}>
-                  <Markdown content={brief} />
-                </div>
-              </CardBody>
-            </Card>
-          </>
-        ) : (
-          <p style={{ marginTop: 0, color: 'var(--color-text-secondary)' }}>
-            No <code>AGENTS.md</code> in this project — it was scaffolded with{' '}
-            <code>--no-mcp</code>, so no AI brief was written. Add one and it will
-            appear here.
-          </p>
-        )}
-      </section>
-
-      <Divider />
-
-      {/* 4 — The Next.js intro, as a map rather than a tutorial. `npm run dev`
-          already worked; what's needed now is "which file". */}
-      <section>
-        <h2 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--spacing-1)' }}>
-          Where things are
-        </h2>
-        <p
-          style={{
-            marginTop: 0,
-            marginBottom: 'var(--spacing-4)',
-            color: 'var(--color-text-secondary)',
-          }}
-        >
-          The whole app is five files.
-        </p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-2)' }}>
-          {FILE_MAP.map((f) => (
-            <div
-              key={f.path}
+            <ul
               style={{
-                display: 'flex',
-                gap: 'var(--spacing-4)',
-                alignItems: 'baseline',
-                flexWrap: 'wrap',
+                margin: 0,
+                marginBottom: 'var(--spacing-4)',
+                paddingLeft: 'var(--spacing-5)',
+                color: 'var(--color-text-secondary)',
+                fontSize: 'var(--text-sm)',
               }}
             >
-              <code
-                style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 'var(--text-sm)',
-                  minWidth: '11rem',
-                }}
-              >
-                {f.path}
-              </code>
-              <span style={{ flex: 1, minWidth: '16rem' }}>{f.owns}</span>
-              {f.href ? (
-                <a
-                  href={f.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{ fontSize: 'var(--text-sm)', color: 'var(--color-primary)' }}
-                >
-                  docs
-                </a>
-              ) : null}
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <Divider />
-
-      {/* Talking to the AI: prompts, not prose. */}
-      <section>
-        <h2 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--spacing-1)' }}>
-          Talk to your AI
-        </h2>
-        <p
-          style={{
-            marginTop: 0,
-            marginBottom: 'var(--spacing-4)',
-            color: 'var(--color-text-secondary)',
-          }}
-        >
-          Your assistant can query the design system directly, so you can describe the
-          outcome instead of the components. Try:
-        </p>
+              {BRIEF_HIGHLIGHTS.map((h) => (
+                <li key={h}>{h}</li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          <p style={{ marginTop: 0, marginBottom: 'var(--spacing-4)', color: 'var(--color-text-secondary)' }}>
+            No <code>AGENTS.md</code> in this project — it was scaffolded with <code>--no-mcp</code>, so no AI
+            brief was written.
+          </p>
+        )}
         <Card>
           <CardHeader>
             <CardTitle>Starter prompts</CardTitle>
@@ -249,23 +166,37 @@ export default async function HomePage() {
                 </li>
               ))}
             </ul>
-            <p
-              style={{
-                marginBottom: 0,
-                marginTop: 'var(--spacing-4)',
-                fontSize: 'var(--text-sm)',
-                color: 'var(--color-text-secondary)',
-              }}
-            >
-              Want a different look? Change the preset above, then tell your AI what
-              you&rsquo;re building — it reads <code>app/providers.tsx</code> for the
-              theme, so it stays current on its own.
-            </p>
           </CardBody>
         </Card>
       </section>
 
-      {/* 5 — The exit. This page's success condition is its own deletion. */}
+      <Divider />
+
+      {/* 3 — Where things are. One thin file map, not a tutorial. */}
+      <section>
+        <h2 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--spacing-1)' }}>Where things are</h2>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-2)' }}>
+          {FILE_MAP.map((f) => (
+            <div
+              key={f.path}
+              style={{ display: 'flex', gap: 'var(--spacing-4)', alignItems: 'baseline', flexWrap: 'wrap' }}
+            >
+              <code
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 'var(--text-sm)',
+                  minWidth: '11rem',
+                }}
+              >
+                {f.path}
+              </code>
+              <span style={{ flex: 1, minWidth: '16rem', color: 'var(--color-text-secondary)' }}>{f.owns}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 4 — Exit. This page's success condition is its own deletion. */}
       <footer
         style={{
           color: 'var(--color-text-secondary)',
