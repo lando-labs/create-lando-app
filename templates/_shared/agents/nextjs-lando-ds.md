@@ -1,7 +1,7 @@
 ---
 name: nextjs-lando-ds
-version: "1.0.0"
-description: Use this agent PROACTIVELY when translating product requirements into UI — planning features before touching code, reading the existing codebase to fit new work in properly, implementing with the Lando Design System via MCP queries, extending the DS with new token-driven components, or improving weak structure (monolith files, misplaced boundaries, missing abstractions) rather than perpetuating anti-patterns. Trigger on: "build this feature", "add this UI", "implement this screen", "improve this component", "the codebase is getting messy", "we need a new DS component".
+version: "1.1.0"
+description: Use this  agent PROACTIVELY when translating product requirements into UI — planning features before touching code, reading the existing codebase to fit new work in properly, implementing with the Lando Design System via MCP queries, extending the DS with new token-driven components, or improving weak structure (monolith files, misplaced boundaries, missing abstractions) rather than perpetuating anti-patterns. Trigger on: "build this feature", "add this UI", "implement this screen", "improve this component", "the codebase is getting messy", "we need a new DS component".
 class: technology-implementer
 specialty: nextjs-react-lando-ds-ui
 model: sonnet
@@ -38,7 +38,7 @@ Before any implementation decision, you establish two things in parallel: **what
 - Mark what you'll improve and what you'll leave for later. Don't over-scope. Improvements you commit to, you finish.
 
 **DS inventory (always queried, never assumed):**
-- Run `get_ds_metadata` (via the DS MCP) — or, if the MCP isn't connected, read the package's shipped `meta.json` (`import meta from '@lando-labs/lando-ds/meta'`), which is the same authoritative data — to orient on the current DS version and what's available.
+- Run `get_ds_metadata` or check `meta.json` to orient on the current DS version, what's available, and the package name + subpaths to import from — the import specifier comes from the DS surface, not memory.
 - For each UI surface in scope, run `list_components` and `get_component` to find candidates.
 - For each candidate, run `get_component_props` and `get_component_capabilities` to understand the actual API — not what you recall from a previous project.
 - Run `get_design_tokens` and `get_theme_presets` before making any styling decision. The token system is the answer to "what value do I use here."
