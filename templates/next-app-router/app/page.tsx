@@ -2,20 +2,36 @@
 //
 // One path, thin frame: iron out your colours, hand off to your AI. This is a
 // Server Component — it reads your AGENTS.md off disk at build time for the
-// §2 brief peek. Only the interactive parts (theme toggle, colour foundation)
-// are client components, in `./_starter`.
+// §2 brief peek. Only the interactive parts (theme toggle, colour
+// foundation, prompt copy buttons) are client components, in `./_starter`.
 //
 // This page is meant to be deleted. Replace it with your app — everything it
 // shows you is either in a file you now know about, or one MCP query away.
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { ArrowRight, Bot } from 'lucide-react'
+import { Container } from '@lando-labs/lando-ds/components/Container/Container'
+import { Stack } from '@lando-labs/lando-ds/components/Stack/Stack'
+import { Inline } from '@lando-labs/lando-ds/components/Inline/Inline'
+import { Heading } from '@lando-labs/lando-ds/components/Heading/Heading'
+import { Text } from '@lando-labs/lando-ds/components/Text/Text'
+import { Lede } from '@lando-labs/lando-ds/components/ArticleCard/Lede'
+import { PageHeader } from '@lando-labs/lando-ds/components/PageHeader/PageHeader'
+import { StepProgress } from '@lando-labs/lando-ds/components/StepProgress/StepProgress'
+import { Callout } from '@lando-labs/lando-ds/components/Callout/Callout'
+import { Badge } from '@lando-labs/lando-ds/components/Badge/Badge'
 import { Card } from '@lando-labs/lando-ds/components/Card/Card'
 import { CardHeader } from '@lando-labs/lando-ds/components/Card/CardHeader'
 import { CardTitle } from '@lando-labs/lando-ds/components/Card/CardTitle'
 import { CardBody } from '@lando-labs/lando-ds/components/Card/CardBody'
+import { List } from '@lando-labs/lando-ds/components/List/List'
+import { ListItem } from '@lando-labs/lando-ds/components/List/ListItem'
 import { Divider } from '@lando-labs/lando-ds/components/Divider/Divider'
 import meta from '@lando-labs/lando-ds/meta'
-import { ThemeToggle, ColorFoundation, PromptRow } from './_starter/Controls'
+import { ThemeToggle } from './_starter/ThemeToggle'
+import { ColorFoundation } from './_starter/ColorFoundation'
+import { PromptRow } from './_starter/PromptRow'
+import { BRIEF_HIGHLIGHTS, FILE_MAP, PROMPTS } from './_starter/starter-data'
 
 /** The brief, read from disk. Absent when scaffolded with `--no-mcp`. */
 async function readBrief(): Promise<string | null> {
@@ -38,209 +54,181 @@ function briefPeek(brief: string): string | null {
   return match[1].replace(/\s+/g, ' ').replace(/[*`]/g, '').trim()
 }
 
-const BRIEF_HIGHLIGHTS = [
-  'Reads the DS via MCP instead of assuming an API from memory.',
-  'Server Components by default; `\'use client\'` only for interactivity.',
-  'No Tailwind, no hardcoded colors — design tokens only.',
-]
-
-const FILE_MAP: Array<{ path: string; owns: string }> = [
-  { path: 'app/page.tsx', owns: 'This page. Replace it — that’s the point.' },
-  { path: 'app/layout.tsx', owns: 'The HTML shell and page metadata.' },
-  { path: 'app/providers.tsx', owns: 'The theme base. Your brand palette lives in globals.css.' },
-  { path: 'app/globals.css', owns: 'Your CSS — including the @layer app block you just copied into.' },
-  { path: 'AGENTS.md', owns: 'What your AI is told about this project. Yours to edit.' },
-]
-
-const PROMPTS = [
-  'Build a dashboard with metric cards and a recent-activity table.',
-  'Add a settings form with validation and a save action.',
-  'Give me a sidebar nav with the routes I have so far.',
-]
-
 export default async function HomePage() {
   const brief = await readBrief()
   const peek = brief ? briefPeek(brief) : null
   const dsVersion = meta.package?.version ?? 'unknown'
 
   return (
-    <main
-      style={{
-        maxWidth: '48rem',
-        margin: '0 auto',
-        padding: 'var(--spacing-8) var(--spacing-6)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 'var(--spacing-8)',
-      }}
-    >
-      {/* 0 — Orient. A status line, not a hero. The toggle sits here because
-          it re-colours everything below it. */}
-      <header
-        style={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          gap: 'var(--spacing-4)',
-          flexWrap: 'wrap',
-        }}
-      >
-        <div>
-          <h1 style={{ fontSize: 'var(--text-2xl)', margin: 0 }}>{{PROJECT_NAME}}</h1>
-          <p
-            style={{
-              margin: 0,
-              marginTop: 'var(--spacing-1)',
-              color: 'var(--color-text-secondary)',
-            }}
-          >
+    <Container size="xl" as="main">
+      <Stack gap="2xl">
+        {/* 0 — Orient. The hero: who you are, what's running, and the toggle
+            that re-colours everything below it.
+            The Lede sits OUTSIDE PageHeader's `subtitle` slot — that slot
+            always wraps its content in the DS's own `<Text as="p">`, so a
+            block-level child (Lede also renders a `<p>`) would nest a
+            `<p>` inside a `<p>`, an invalid-HTML hydration error. Rendering
+            it as the next line in the same Stack keeps the hero visually
+            intact. */}
+        <Stack gap="sm">
+          <PageHeader
+            title="{{PROJECT_NAME}}"
+            actions={
+              <Stack gap="sm" align="end">
+                <Inline gap="xs" wrap justify="end">
+                  <Text variant="mono" size="sm" color="var(--color-text-secondary)">
+                    localhost:{{DEV_PORT}}
+                  </Text>
+                  <Badge size="sm">lando-ds {dsVersion}</Badge>
+                </Inline>
+                <ThemeToggle />
+              </Stack>
+            }
+          />
+          <Lede>
             Your Lando-DS app is running. Set a brand colour, then hand off to your AI — this page is
             meant to be deleted.
-          </p>
-          <p
-            style={{
-              margin: 0,
-              marginTop: 'var(--spacing-1)',
-              fontFamily: 'var(--font-mono)',
-              fontSize: 'var(--text-sm)',
-              color: 'var(--color-text-secondary)',
-            }}
-          >
-            localhost:{{DEV_PORT}} · lando-ds {dsVersion}
-          </p>
-        </div>
-        <ThemeToggle />
-      </header>
+          </Lede>
+        </Stack>
 
-      {/* 1 — Your palette. Iron out your colours, see them on real
-          components, copy the CSS. */}
-      <section>
-        <h2 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--spacing-1)' }}>1 · Your palette</h2>
-        <p
-          style={{
-            marginTop: 0,
-            marginBottom: 'var(--spacing-4)',
-            color: 'var(--color-text-secondary)',
-          }}
-        >
-          Pick or paste a primary. We keep it readable, derive the rest, and show you the result on the
-          actual design system — not a screenshot.
-        </p>
-        <ColorFoundation />
-      </section>
+        {/* Spine — decorative, mirrors the numbered section headings below. */}
+        <StepProgress
+          steps={['Your palette', 'Hand off to your AI']}
+          currentStep={0}
+          variant="numbered"
+          aria-label="Getting started steps"
+        />
 
-      {/* Bridge, not a blank divider — carries the artifact you just copied
-          into the next step. */}
-      <p
-        style={{
-          margin: 0,
-          textAlign: 'center',
-          fontSize: 'var(--text-sm)',
-          color: 'var(--color-text-primary)',
-        }}
-      >
-        Palette locked in. Now hand the wheel to your AI — it already knows this design system.
-      </p>
+        {/* 1 — Your palette. Iron out your colours, see them on real
+            components, copy the CSS. */}
+        <Stack gap="lg" as="section">
+          <Stack gap="xs">
+            <Heading level={2} variant="section">
+              1 · Your palette
+            </Heading>
+            <Text color="var(--color-text-secondary)">
+              Pick or paste a primary. We keep it readable, derive the rest, and show you the result on
+              the actual design system — not a screenshot.
+            </Text>
+          </Stack>
+          <ColorFoundation />
+        </Stack>
 
-      {/* 2 — Build with your AI. A slim brief, then the call-to-action. */}
-      <section>
-        <h2 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--spacing-1)' }}>
-          2 · Build with your AI
-        </h2>
-        {brief ? (
-          <>
-            <p
-              style={{
-                marginTop: 0,
-                marginBottom: peek ? 'var(--spacing-2)' : 'var(--spacing-4)',
-                color: 'var(--color-text-secondary)',
-              }}
-            >
-              Your AI reads <code>AGENTS.md</code> before it writes code. {peek}
-            </p>
-            <ul
-              style={{
-                margin: 0,
-                marginBottom: 'var(--spacing-4)',
-                paddingLeft: 'var(--spacing-5)',
-                color: 'var(--color-text-secondary)',
-                fontSize: 'var(--text-sm)',
-              }}
-            >
-              {BRIEF_HIGHLIGHTS.map((h) => (
-                <li key={h}>{h}</li>
-              ))}
-            </ul>
-          </>
-        ) : (
-          <p style={{ marginTop: 0, marginBottom: 'var(--spacing-4)', color: 'var(--color-text-secondary)' }}>
-            No <code>AGENTS.md</code> in this project — it was scaffolded with <code>--no-mcp</code>, so no AI
-            brief was written.
-          </p>
-        )}
-        <Card>
-          <CardHeader>
-            <CardTitle>Starter prompts</CardTitle>
-          </CardHeader>
-          <CardBody>
-            <p
-              style={{
-                marginTop: 0,
-                marginBottom: 'var(--spacing-3)',
-                fontSize: 'var(--text-sm)',
-                color: 'var(--color-text-secondary)',
-              }}
-            >
-              Open this folder in Claude Code or Cursor — <code>.mcp.json</code> and the{' '}
-              <code>nextjs-lando-ds</code> agent are already wired — and paste one:
-            </p>
-            <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
-              {PROMPTS.map((p) => (
-                <PromptRow key={p} prompt={p} />
-              ))}
-            </ul>
-          </CardBody>
-        </Card>
-      </section>
+        {/* Bridge — carries the artifact you just copied into the next step,
+            in the colour you just picked (Callout's `primary` accent reads
+            `--color-primary`). */}
+        <Callout accent="primary" icon={<ArrowRight size={16} />}>
+          Palette locked in. Now hand the wheel to your AI — it already knows this design system.
+        </Callout>
 
-      <Divider />
+        {/* 2 — Build with your AI. A slim brief, then the call-to-action. */}
+        <Stack gap="lg" as="section">
+          <Heading level={2} variant="section">
+            2 · Build with your AI
+          </Heading>
 
-      {/* 3 — Where things are. One thin file map, not a tutorial. */}
-      <section>
-        <h2 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--spacing-1)' }}>Where things are</h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-2)' }}>
-          {FILE_MAP.map((f) => (
-            <div
-              key={f.path}
-              style={{ display: 'flex', gap: 'var(--spacing-4)', alignItems: 'baseline', flexWrap: 'wrap' }}
-            >
-              <code
-                style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 'var(--text-sm)',
-                  minWidth: '11rem',
-                }}
-              >
-                {f.path}
-              </code>
-              <span style={{ flex: 1, minWidth: '16rem', color: 'var(--color-text-secondary)' }}>{f.owns}</span>
-            </div>
-          ))}
-        </div>
-      </section>
+          {brief ? (
+            <Stack gap="sm">
+              <Text color="var(--color-text-secondary)">
+                Your AI reads{' '}
+                <Text as="span" variant="mono">
+                  AGENTS.md
+                </Text>{' '}
+                before it writes code. {peek}
+              </Text>
+              <List variant="unordered" spacing="sm">
+                {BRIEF_HIGHLIGHTS.map((h) => (
+                  <ListItem key={h}>
+                    <Text size="sm" color="var(--color-text-secondary)">
+                      {h}
+                    </Text>
+                  </ListItem>
+                ))}
+              </List>
+            </Stack>
+          ) : (
+            <Text color="var(--color-text-secondary)">
+              No{' '}
+              <Text as="span" variant="mono">
+                AGENTS.md
+              </Text>{' '}
+              in this project — it was scaffolded with{' '}
+              <Text as="span" variant="mono">
+                --no-mcp
+              </Text>
+              , so no AI brief was written.
+            </Text>
+          )}
 
-      {/* 4 — Exit. This page's success condition is its own deletion. */}
-      <footer
-        style={{
-          color: 'var(--color-text-secondary)',
-          fontSize: 'var(--text-sm)',
-          borderTop: '1px solid var(--color-border-subtle)',
-          paddingTop: 'var(--spacing-4)',
-        }}
-      >
-        Done looking? Replace the contents of <code>app/page.tsx</code> (and delete{' '}
-        <code>app/_starter/</code>) — this page is a starting point, not furniture.
-      </footer>
-    </main>
+          <Callout accent="info" label="Hand off" icon={<Bot size={16} />}>
+            Open this folder in Claude Code or Cursor —{' '}
+            <Text as="span" variant="mono">
+              .mcp.json
+            </Text>{' '}
+            and the{' '}
+            <Text as="span" variant="mono">
+              nextjs-lando-ds
+            </Text>{' '}
+            agent are already wired — and paste one:
+          </Callout>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Starter prompts</CardTitle>
+            </CardHeader>
+            <CardBody>
+              <List variant="plain" spacing="sm">
+                {PROMPTS.map((p) => (
+                  <PromptRow key={p} prompt={p} />
+                ))}
+              </List>
+            </CardBody>
+          </Card>
+        </Stack>
+
+        <Divider />
+
+        {/* 3 — Where things are. One thin file map, not a tutorial. */}
+        <Stack gap="md" as="section">
+          <Heading level={2} variant="section">
+            Where things are
+          </Heading>
+          <Card>
+            <CardBody>
+              <List variant="plain" spacing="md" divider>
+                {FILE_MAP.map((f) => (
+                  <ListItem key={f.path}>
+                    <Stack gap="xs">
+                      <Text as="span" variant="mono" size="sm">
+                        {f.path}
+                      </Text>
+                      <Text size="sm" color="var(--color-text-secondary)">
+                        {f.owns}
+                      </Text>
+                    </Stack>
+                  </ListItem>
+                ))}
+              </List>
+            </CardBody>
+          </Card>
+        </Stack>
+
+        {/* 4 — Exit. This page's success condition is its own deletion. */}
+        <Stack gap="md" as="section">
+          <Divider />
+          <Text size="sm" color="var(--color-text-secondary)">
+            Done looking? Replace the contents of{' '}
+            <Text as="span" variant="mono">
+              app/page.tsx
+            </Text>{' '}
+            (and delete{' '}
+            <Text as="span" variant="mono">
+              app/_starter/
+            </Text>
+            ) — this page is a starting point, not furniture.
+          </Text>
+        </Stack>
+      </Stack>
+    </Container>
   )
 }
