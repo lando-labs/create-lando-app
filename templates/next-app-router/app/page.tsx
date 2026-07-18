@@ -15,7 +15,7 @@ import { CardTitle } from '@lando-labs/lando-ds/components/Card/CardTitle'
 import { CardBody } from '@lando-labs/lando-ds/components/Card/CardBody'
 import { Divider } from '@lando-labs/lando-ds/components/Divider/Divider'
 import meta from '@lando-labs/lando-ds/meta'
-import { ThemeToggle, ColorFoundation } from './_starter/Controls'
+import { ThemeToggle, ColorFoundation, PromptRow } from './_starter/Controls'
 
 /** The brief, read from disk. Absent when scaffolded with `--no-mcp`. */
 async function readBrief(): Promise<string | null> {
@@ -79,7 +79,7 @@ export default async function HomePage() {
       <header
         style={{
           display: 'flex',
-          alignItems: 'center',
+          alignItems: 'flex-start',
           justifyContent: 'space-between',
           gap: 'var(--spacing-4)',
           flexWrap: 'wrap',
@@ -90,6 +90,17 @@ export default async function HomePage() {
           <p
             style={{
               margin: 0,
+              marginTop: 'var(--spacing-1)',
+              color: 'var(--color-text-secondary)',
+            }}
+          >
+            Your Lando-DS app is running. Set a brand colour, then hand off to your AI — this page is
+            meant to be deleted.
+          </p>
+          <p
+            style={{
+              margin: 0,
+              marginTop: 'var(--spacing-1)',
               fontFamily: 'var(--font-mono)',
               fontSize: 'var(--text-sm)',
               color: 'var(--color-text-secondary)',
@@ -104,7 +115,7 @@ export default async function HomePage() {
       {/* 1 — Your palette. Iron out your colours, see them on real
           components, copy the CSS. */}
       <section>
-        <h2 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--spacing-1)' }}>Your palette</h2>
+        <h2 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--spacing-1)' }}>1 · Your palette</h2>
         <p
           style={{
             marginTop: 0,
@@ -118,11 +129,24 @@ export default async function HomePage() {
         <ColorFoundation />
       </section>
 
-      <Divider />
+      {/* Bridge, not a blank divider — carries the artifact you just copied
+          into the next step. */}
+      <p
+        style={{
+          margin: 0,
+          textAlign: 'center',
+          fontSize: 'var(--text-sm)',
+          color: 'var(--color-text-primary)',
+        }}
+      >
+        Palette locked in. Now hand the wheel to your AI — it already knows this design system.
+      </p>
 
       {/* 2 — Build with your AI. A slim brief, then the call-to-action. */}
       <section>
-        <h2 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--spacing-1)' }}>Build with your AI</h2>
+        <h2 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--spacing-1)' }}>
+          2 · Build with your AI
+        </h2>
         {brief ? (
           <>
             <p
@@ -159,11 +183,20 @@ export default async function HomePage() {
             <CardTitle>Starter prompts</CardTitle>
           </CardHeader>
           <CardBody>
-            <ul style={{ margin: 0, paddingLeft: 'var(--spacing-5)' }}>
+            <p
+              style={{
+                marginTop: 0,
+                marginBottom: 'var(--spacing-3)',
+                fontSize: 'var(--text-sm)',
+                color: 'var(--color-text-secondary)',
+              }}
+            >
+              Open this folder in Claude Code or Cursor — <code>.mcp.json</code> and the{' '}
+              <code>nextjs-lando-ds</code> agent are already wired — and paste one:
+            </p>
+            <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
               {PROMPTS.map((p) => (
-                <li key={p} style={{ marginBottom: 'var(--spacing-2)' }}>
-                  {p}
-                </li>
+                <PromptRow key={p} prompt={p} />
               ))}
             </ul>
           </CardBody>
