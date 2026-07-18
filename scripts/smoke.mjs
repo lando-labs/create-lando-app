@@ -19,7 +19,7 @@
  *      → installs via `file:` spec (test against an unreleased local DS build).
  *   2. Otherwise resolve @lando-labs/lando-ds from public npm.
  */
-import { mkdtemp, rm, readFile, access } from 'node:fs/promises'
+import { mkdtemp, rm, readFile, readdir, access } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -182,21 +182,28 @@ async function exists(p) {
  */
 async function assertStarterPage(projectDir) {
   log('Asserting starter page rules …')
+  const starterDir = join(projectDir, 'app', '_starter')
   const page = await readFile(join(projectDir, 'app', 'page.tsx'), 'utf8')
-  const controls = await readFile(join(projectDir, 'app', '_starter', 'Controls.tsx'), 'utf8')
-  const color = await readFile(join(projectDir, 'app', '_starter', 'color.ts'), 'utf8')
+  const color = await readFile(join(starterDir, 'color.ts'), 'utf8')
+
+  // The starter is split across several component files under `_starter/` (a
+  // folder the user deletes wholesale), so assert against ALL of them
+  // concatenated — resilient to how the control/preview are decomposed.
+  const starterFiles = (await readdir(starterDir)).filter((f) => /\.(t|j)sx?$/.test(f) && f !== 'color.ts')
+  let starterSrc = ''
+  for (const f of starterFiles) starterSrc += '\n' + (await readFile(join(starterDir, f), 'utf8'))
 
   // 1 — presets removed.
-  if (await exists(join(projectDir, 'app', '_starter', 'palette.ts'))) {
+  if (await exists(join(starterDir, 'palette.ts'))) {
     fail('app/_starter/palette.ts still ships — the preset system was meant to be removed')
   }
-  if (/from '\.\/palette'/.test(controls)) {
-    fail('Controls.tsx still imports ./palette — the dropped preset module')
+  if (/from '\.\/palette'/.test(starterSrc)) {
+    fail('the starter still imports ./palette — the dropped preset module')
   }
 
   // 2 — the colour engine is wired, emitting an OKLCH @layer app block.
   for (const fn of ['ensureAccessiblePrimary', 'buildPalette', 'emitLayerApp', 'paletteVars']) {
-    if (!controls.includes(fn)) fail(`Controls.tsx no longer uses ${fn} — the colour engine is unwired`)
+    if (!starterSrc.includes(fn)) fail(`the starter no longer uses ${fn} — the colour engine is unwired`)
   }
   if (!/formatOklch/.test(color) || !/@layer app/.test(color)) {
     fail('color.ts no longer emits an @layer app / OKLCH block — the copy-paste artifact broke')
@@ -209,8 +216,8 @@ async function assertStarterPage(projectDir) {
 
   // 4 — palette shown on real components.
   for (const comp of ['Button', 'Alert']) {
-    if (!controls.includes(comp)) {
-      fail(`Controls.tsx no longer renders <${comp}> — the palette must show on real DS components`)
+    if (!starterSrc.includes(comp)) {
+      fail(`the starter no longer renders <${comp}> — the palette must show on real DS components`)
     }
   }
 
