@@ -95,9 +95,9 @@ export function PalettePreview({ primary, tint, previewVars, showHarmonyCaption 
 
           {showHarmonyCaption ? (
             <Text size="sm" color="var(--color-text-secondary)">
-              Secondary and accent are derived supporting roles you consume manually — the DS keeps filled
-              components primary-only by design, so look-alike swatches under a Tonal ramp are expected, not
-              broken.
+              Secondary and accent are derived supporting roles — the DS keeps filled components primary-only
+              by design, so you apply these yourself via <Text as="span" variant="mono">var(--color-secondary)</Text>{' '}
+              and <Text as="span" variant="mono">var(--color-accent)</Text> in your own components.
             </Text>
           ) : null}
 

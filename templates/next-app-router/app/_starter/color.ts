@@ -101,7 +101,9 @@ export function deriveHarmony(
     secondary = pinnedSecondary
     switch (ramp) {
       case 'tonal':
-        accent = { L: p.L, C: p.C, H: p.H }
+        // A deeper, saturated tone of the same hue — a real third role, not a
+        // copy of primary. Multiplicative so it stays distinct at any lightness.
+        accent = { L: p.L * 0.72, C: p.C, H: p.H }
         break
       case 'neighbouring':
         // reflect the pinned secondary across the primary to extend the run
@@ -115,7 +117,9 @@ export function deriveHarmony(
     switch (ramp) {
       case 'tonal':
         secondary = { L: Math.min(0.7, p.L + 0.08), C: p.C * 0.6, H: p.H }
-        accent = { L: p.L, C: p.C, H: p.H }
+        // A deeper, saturated tone of the same hue — a real third role, not a
+        // copy of primary. Multiplicative so it stays distinct at any lightness.
+        accent = { L: p.L * 0.72, C: p.C, H: p.H }
         break
       case 'neighbouring':
         secondary = { L: p.L, C: p.C, H: clampHue(p.H + 30) }
