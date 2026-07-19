@@ -43,19 +43,9 @@ import {
 
 const HEX_RE = /^#[0-9a-fA-F]{6}$/
 
-// Fixed affordance sizes (a colour well, a swatch dot) — an intrinsic control
-// dimension, like an icon, not layout rhythm, so an explicit rem is correct
-// here rather than a spacing-scale token.
-const swatchDotStyle = (hex: string, active: boolean): CSSProperties => ({
-  width: '2rem',
-  height: '2rem',
-  borderRadius: 'var(--radius-full)',
-  border: active ? '2px solid var(--color-text-primary)' : '1px solid var(--color-border-default)',
-  background: hex,
-  cursor: 'pointer',
-  padding: 0,
-})
-
+// The native OS colour picker — the one browser primitive the DS has no
+// component for. Minimal tokened sizing; everything else on this page is a DS
+// component.
 const colorInputStyle: CSSProperties = {
   width: '3rem',
   height: '2.5rem',
@@ -216,14 +206,15 @@ export function ColorControl({
               </Text>
               <Inline gap="sm" wrap>
                 {QUICK_START.map((s) => (
-                  <button
+                  <Button
                     key={s.hex}
-                    type="button"
+                    variant={primaryHex === s.hex ? 'outline' : 'ghost'}
+                    size="sm"
                     onClick={() => onPickPrimary(s.hex)}
                     aria-label={`Use ${s.name}`}
-                    title={s.name}
-                    style={swatchDotStyle(s.hex, primaryHex === s.hex)}
-                  />
+                  >
+                    <ColorSwatch color={s.hex} size="sm" shape="circle" aria-label="" />
+                  </Button>
                 ))}
               </Inline>
             </Stack>
@@ -335,23 +326,31 @@ export function ColorControl({
             </Stack>
           </Stack>
 
-          <Divider label="Your CSS" />
+          <Divider label="Your theme" />
 
           <Stack gap="sm">
             <Text size="sm">
-              Paste into{' '}
+              This is a DS{' '}
               <Text as="span" variant="mono">
-                app/globals.css
+                ProductTheme
               </Text>
-              , inside the{' '}
+              . Save it as{' '}
               <Text as="span" variant="mono">
-                @layer app
+                app/brand-theme.ts
               </Text>{' '}
-              block already there. No reroll needed — the same inputs always build the same palette.
+              and pass it to{' '}
+              <Text as="span" variant="mono">
+                {'<ThemeProvider defaultProductTheme={brandTheme}>'}
+              </Text>{' '}
+              in{' '}
+              <Text as="span" variant="mono">
+                app/providers.tsx
+              </Text>{' '}
+              — the DS derives every ramp and state from it.
             </Text>
             {accessible.corrected ? (
               <Text size="sm" color="var(--color-text-secondary)">
-                Emitted with the contrast-safe value (
+                Built with the contrast-safe primary (
                 <Text as="span" variant="mono">
                   {accessible.hex}
                 </Text>
@@ -359,10 +358,14 @@ export function ColorControl({
                 <Text as="span" variant="mono">
                   {primaryHex}
                 </Text>
-                ). Click <strong>Fix contrast</strong> above to make them match.
+                ). Click{' '}
+                <Text as="span" weight="semibold">
+                  Fix contrast
+                </Text>{' '}
+                above to make them match.
               </Text>
             ) : null}
-            <CodeBlock code={artifact} language="css" title="app/globals.css — inside @layer app" />
+            <CodeBlock code={artifact} language="tsx" title="app/brand-theme.ts" />
           </Stack>
         </Stack>
       </CardBody>

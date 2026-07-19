@@ -1,120 +1,123 @@
 'use client'
 
 /**
- * The result, on real components — live, not a screenshot. The palette (from
- * `ColorFoundation`) plus the current mode's brand-tinted surfaces are applied
- * as custom properties on the card body's inner Stack, so everything inside —
- * the buttons, the full derived ramps, the surface swatches — re-colours from
- * them. Primary leads on the filled button; the ramps show the whole system
- * your one colour generates.
+ * The live preview — real DS components, not swatch chips. The right column is
+ * wrapped in the DS `ThemeScope` primitive fed your `ProductTheme`, so the DS
+ * itself resolves the ramps, hover/active states and surfaces from your palette
+ * (nothing here writes a CSS variable by hand). The left column is the same
+ * components at the DS default, so the customisation is legible side by side.
  *
  * Delete this file when you replace the starter page.
  */
-import type { CSSProperties } from 'react'
-import { useTheme } from '@lando-labs/lando-ds'
-import { useMounted } from '@lando-labs/lando-ds/hooks'
+import type { ResolvedTheme } from '@lando-labs/lando-ds'
+import { ThemeScope } from '@lando-labs/lando-ds/components/ThemeScope/ThemeScope'
 import { Card } from '@lando-labs/lando-ds/components/Card/Card'
 import { CardHeader } from '@lando-labs/lando-ds/components/Card/CardHeader'
 import { CardTitle } from '@lando-labs/lando-ds/components/Card/CardTitle'
 import { CardBody } from '@lando-labs/lando-ds/components/Card/CardBody'
+import { Box } from '@lando-labs/lando-ds/components/Box/Box'
+import { Grid } from '@lando-labs/lando-ds/components/Grid/Grid'
 import { Stack } from '@lando-labs/lando-ds/components/Stack/Stack'
 import { Inline } from '@lando-labs/lando-ds/components/Inline/Inline'
 import { Text } from '@lando-labs/lando-ds/components/Text/Text'
 import { Button } from '@lando-labs/lando-ds/components/Button/Button'
+import { Badge } from '@lando-labs/lando-ds/components/Badge/Badge'
 import { Alert } from '@lando-labs/lando-ds/components/Alert/Alert'
-import { PaletteRamps } from './PaletteRamps'
-import { surfaceVars, type Oklch, type TintStrength } from './color'
+import { Input } from '@lando-labs/lando-ds/components/Input/Input'
+import { Progress } from '@lando-labs/lando-ds/components/Progress/Progress'
+import { ColorSwatch } from '@lando-labs/lando-ds/components/ColorSwatch/ColorSwatch'
+import type { ProductTheme } from './color'
 
 export interface PalettePreviewProps {
-  primary: Oklch
-  tint: TintStrength
-  previewVars: Record<string, string>
-  /** Whether the harmony customiser is open — gates the "derived roles" caption. */
-  showHarmonyCaption: boolean
+  theme: ProductTheme
 }
 
-export function PalettePreview({ primary, tint, previewVars, showHarmonyCaption }: PalettePreviewProps) {
-  const { theme } = useTheme()
-  const mounted = useMounted()
-  // The tint depends on the resolved light/dark mode, which the server can't
-  // know — so render untinted until mounted (matching the server), then resolve
-  // for the real mode. Same reasoning as the theme toggle's neutral label.
-  const surface = mounted ? surfaceVars(primary, tint, theme === 'dark' ? 'dark' : 'light') : {}
-  const wrapperStyle = { ...previewVars, ...surface } as CSSProperties
+/** A compact gallery exercising primary, semantics and the surfaces. */
+function SampleCluster() {
+  return (
+    <Stack gap="md">
+      <Inline gap="sm" wrap>
+        <Button variant="primary">Primary</Button>
+        <Button variant="secondary">Secondary</Button>
+        <Button variant="outline">Outline</Button>
+        <Button variant="danger">Delete</Button>
+      </Inline>
+      <Inline gap="xs" wrap>
+        <Badge variant="primary">Primary</Badge>
+        <Badge variant="success">Success</Badge>
+        <Badge variant="warning">Warning</Badge>
+        <Badge variant="danger">Danger</Badge>
+        <Badge variant="info">Info</Badge>
+      </Inline>
+      <Progress value={62} color="primary" label="Uploading" showValue />
+      <Input label="Email" placeholder="you@example.com" />
+      <Alert variant="success" inline title="Saved">
+        Your changes are live.
+      </Alert>
+      <Alert variant="error" inline title="Error">
+        Danger stays red.
+      </Alert>
+    </Stack>
+  )
+}
 
+function roleHex(theme: ProductTheme, key: string): string {
+  const v = theme.tokens.color?.[key]
+  return typeof v === 'string' ? v : ''
+}
+
+/**
+ * One themed panel. The DS `ThemeScope` applies the theme to this subtree only;
+ * `mode` is explicit (not inherited) so server and client render the same mode —
+ * that's what keeps it hydration-safe AND lets us show light + dark at once. The
+ * `Box` paints the scope's own `--color-background`, so the surface tint shows.
+ */
+function Panel({
+  label,
+  mode,
+  theme,
+}: {
+  label: string
+  mode: ResolvedTheme
+  theme?: ProductTheme
+}) {
+  return (
+    <Stack gap="sm">
+      <Text size="sm" weight="medium" color="var(--color-text-secondary)">
+        {label}
+      </Text>
+      <ThemeScope mode={mode} theme={theme}>
+        <Box background="var(--color-background)" border borderRadius="lg" padding="md">
+          <SampleCluster />
+        </Box>
+      </ThemeScope>
+    </Stack>
+  )
+}
+
+export function PalettePreview({ theme }: PalettePreviewProps) {
   return (
     <Card variant="elevated">
       <CardHeader>
         <CardTitle>Live preview</CardTitle>
       </CardHeader>
       <CardBody>
-        <Stack gap="lg" style={wrapperStyle}>
-          <Inline gap="sm" wrap>
-            <Button variant="primary" size="lg">
-              Primary action
-            </Button>
-            <Button variant="outline">Outline</Button>
+        <Stack gap="lg">
+          {/* Your three brand roles. Accent has no DS component of its own — it's
+              a token for your OWN components — so it's shown as a swatch, honestly. */}
+          <Inline gap="lg" wrap>
+            <ColorSwatch color={roleHex(theme, 'primary')} label="Primary" size="lg" />
+            <ColorSwatch color={roleHex(theme, 'secondary')} label="Secondary" size="lg" />
+            <ColorSwatch color={roleHex(theme, 'accent')} label="Accent" size="lg" />
           </Inline>
 
-          <PaletteRamps />
-
-          {/* A miniature of the actual themed surface — reads the (possibly
-              tinted) background/surface/text/border tokens, so it visibly leans
-              toward the brand and flips with the light/dark toggle. This is what
-              makes "theme-adjacent" legible, vs. the abstract swatch row above. */}
-          <div
-            style={{
-              background: 'var(--color-background)',
-              border: '1px solid var(--color-border-default)',
-              borderRadius: 'var(--radius-lg)',
-              padding: 'var(--spacing-md)',
-            }}
-          >
-            <Stack gap="sm">
-              <Text size="sm" color="var(--color-text-secondary)">
-                Your surfaces, this mode
-              </Text>
-              <div
-                style={{
-                  background: 'var(--color-surface)',
-                  border: '1px solid var(--color-border-subtle)',
-                  borderRadius: 'var(--radius-md)',
-                  padding: 'var(--spacing-md)',
-                }}
-              >
-                <Stack gap="xs">
-                  <Text weight="medium">Surface card</Text>
-                  <Text size="sm" color="var(--color-text-secondary)">
-                    Background, surface, text and borders lean toward your brand — toggle light/dark to see
-                    both.
-                  </Text>
-                </Stack>
-              </div>
-            </Stack>
-          </div>
-
-          {showHarmonyCaption ? (
-            <Text size="sm" color="var(--color-text-secondary)">
-              Secondary and accent are derived supporting roles — the DS keeps filled components primary-only
-              by design, so you apply these yourself via <Text as="span" variant="mono">var(--color-secondary)</Text>{' '}
-              and <Text as="span" variant="mono">var(--color-accent)</Text> in your own components.
-            </Text>
-          ) : null}
-
-          <Stack gap="sm">
-            <Alert variant="success" inline title="Success">
-              Harmonised toward your brand — still reads green.
-            </Alert>
-            <Alert variant="warning" inline title="Warning">
-              Nudged toward your brand — still reads amber.
-            </Alert>
-            <Alert variant="info" inline title="Info">
-              Tuned toward your brand — still reads blue.
-            </Alert>
-            <Alert variant="error" inline title="Error">
-              Untouched. Danger stays red — there&rsquo;s no override for it.
-            </Alert>
-          </Stack>
+          {/* The DS default, then your theme in both modes — same components, so
+              the customisation (and the theme-adjacent light/dark) is legible. */}
+          <Grid columns={{ md: 2, lg: 3 }} gap="lg" align="start">
+            <Panel label="DS default" mode="light" />
+            <Panel label="Your theme · light" mode="light" theme={theme} />
+            <Panel label="Your theme · dark" mode="dark" theme={theme} />
+          </Grid>
         </Stack>
       </CardBody>
     </Card>

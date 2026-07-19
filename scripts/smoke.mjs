@@ -168,17 +168,17 @@ async function exists(p) {
  * The starter page's load-bearing rules, checked statically (free — no boot).
  *
  * The page is a colour-foundation tool: pick/paste a primary → an accessible
- * palette derived through the DS's own OKLCH maths → an `@layer app` block to
- * paste. So unlike the old swatch page, hex here is legitimate INPUT (the picker
- * seeds). What must stay true:
+ * palette derived through the DS's own OKLCH maths → a DS `ProductTheme` you
+ * paste into `ThemeProvider`. It must model proper DS practice, so:
  *
- *  1. **Presets are gone.** The preset-data module (`palette.ts`) must not ship,
- *     and nothing may import it — the old preset chooser was replaced wholesale.
- *  2. **The colour engine is wired** and the artifact it emits is OKLCH var
- *     tokens (never a hardcoded colour in the shipped app).
- *  3. **Danger stays red** — no `--color-error` override is ever emitted.
- *  4. **The palette shows on real DS components**, not token chips.
- *  5. **The brief peek reads the real `AGENTS.md`**, so it can't drift.
+ *  1. **Presets are gone** (`palette.ts` must not ship, nothing imports it).
+ *  2. **The engine outputs a DS `ProductTheme`** (`buildProductTheme`) — it must
+ *     NOT hand-write CSS (`@layer app` / `color-mix()` / `data-theme=`); the DS
+ *     derives ramps/states/surfaces from the theme.
+ *  3. **The preview applies the theme via the DS `ThemeScope`**, not injected vars.
+ *  4. **Danger stays red** — the theme never sets an `error` colour.
+ *  5. **The palette shows on real DS components**, and the brief peek reads the
+ *     real `AGENTS.md`.
  */
 async function assertStarterPage(projectDir) {
   log('Asserting starter page rules …')
@@ -201,24 +201,25 @@ async function assertStarterPage(projectDir) {
     fail('the starter still imports ./palette — the dropped preset module')
   }
 
-  // 2 — the colour engine is wired, emitting an OKLCH @layer app block.
-  for (const fn of ['ensureAccessiblePrimary', 'buildPalette', 'emitLayerApp', 'paletteVars']) {
-    if (!starterSrc.includes(fn)) fail(`the starter no longer uses ${fn} — the colour engine is unwired`)
+  // 2 — the engine is wired and outputs a DS ProductTheme.
+  for (const fn of ['ensureAccessiblePrimary', 'buildPalette', 'buildProductTheme']) {
+    if (!starterSrc.includes(fn) && !color.includes(fn)) fail(`the starter no longer uses ${fn} — the engine is unwired`)
   }
-  if (!/formatOklch/.test(color) || !/@layer app/.test(color)) {
-    fail('color.ts no longer emits an @layer app / OKLCH block — the copy-paste artifact broke')
+  if (!/ProductTheme/.test(color)) fail('color.ts no longer produces a DS ProductTheme')
+
+  // 2b — NO hand-rolled CSS/colour injection. The theme flows through the DS
+  // (ProductTheme + ThemeScope); the engine must not hand-write custom properties.
+  const handRolled = color.match(/@layer app|color-mix\(|data-theme=/)
+  if (handRolled) {
+    fail(`color.ts hand-writes CSS (${handRolled[0]}) — the theme must go through the DS ProductTheme, not injected CSS`)
+  }
+  if (!/ThemeScope/.test(starterSrc)) {
+    fail('the preview no longer applies the theme via the DS ThemeScope — it must not inject vars by hand')
   }
 
-  // 3 — danger stays the DS default red.
-  if (/--color-error/.test(color)) {
-    fail('color.ts emits a --color-error override — danger must stay the DS default red')
-  }
-
-  // 3b — brand-tinted surfaces stay mode-scoped. The dark background is a
-  // separate literal (not the neutral ramp), so an un-scoped :root override
-  // would break dark mode — the tint MUST emit per-mode `data-theme` blocks.
-  if (!/surfaceVars/.test(color) || !/data-theme/.test(color)) {
-    fail('color.ts no longer provides mode-scoped surface tint (surfaceVars + data-theme) — theme-adjacency broke')
+  // 3 — danger stays the DS default red: the theme never sets an `error` colour.
+  if (/['"]error['"]\s*:/.test(color)) {
+    fail('color.ts sets an `error` colour in the theme — danger must stay the DS default red')
   }
 
   // 4 — palette shown on real components.
@@ -234,7 +235,7 @@ async function assertStarterPage(projectDir) {
   }
   if (/\{\{[A-Z_]+\}\}/.test(page)) fail('app/page.tsx still contains an unsubstituted {{PLACEHOLDER}}')
 
-  log('starter page ok: presets removed, engine wired, OKLCH artifact, error stays red, palette on real components')
+  log('starter page ok: presets removed, engine → ProductTheme, no hand-written CSS, theme via ThemeScope, error red')
 }
 
 /**
@@ -255,11 +256,10 @@ async function assertBriefingLayer(projectDir) {
     }
   }
 
-  // Canonical brief. The palette rule is repointed at globals.css / @layer app
-  // (the copy-paste target), not the old two-file preset dance.
+  // Canonical brief. The theme rule points at providers.tsx + the DS ProductTheme.
   const agents = await read('AGENTS.md')
-  if (!/app\/globals\.css/.test(agents) || !/@layer app/.test(agents)) {
-    fail('AGENTS.md no longer points the brand-palette rule at app/globals.css / @layer app — the theme rule wasn’t repointed')
+  if (!/app\/providers\.tsx/.test(agents) || !/ProductTheme/.test(agents)) {
+    fail('AGENTS.md no longer points the theme rule at app/providers.tsx / ProductTheme')
   }
 
   // Pointers. CLAUDE.md must actually import the brief, not paraphrase it.

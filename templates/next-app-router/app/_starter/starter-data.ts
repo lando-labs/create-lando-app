@@ -35,8 +35,8 @@ export interface FileMapEntry {
 export const FILE_MAP: readonly FileMapEntry[] = [
   { path: 'app/page.tsx', owns: 'This page. Replace it — that’s the point.' },
   { path: 'app/layout.tsx', owns: 'The HTML shell and page metadata.' },
-  { path: 'app/providers.tsx', owns: 'The theme base. Your brand palette lives in globals.css.' },
-  { path: 'app/globals.css', owns: 'Your CSS — including the @layer app block you just copied into.' },
+  { path: 'app/providers.tsx', owns: 'The theme — pass your ProductTheme here.' },
+  { path: 'app/globals.css', owns: 'Your CSS. The app reset lives in @layer app-reset.' },
   { path: 'AGENTS.md', owns: 'What your AI is told about this project. Yours to edit.' },
 ]
 
@@ -44,31 +44,4 @@ export const PROMPTS: readonly string[] = [
   'Build a dashboard with metric cards and a recent-activity table.',
   'Add a settings form with validation and a save action.',
   'Give me a sidebar nav with the routes I have so far.',
-]
-
-/**
- * The palette showcase. Each role derives a full ramp from its base via the
- * DS's `color-mix` (e.g. `--color-primary-lightest`), so a swatch reading
- * `var(--color-<role>-<step>)` is always the real derived colour — never a
- * value computed in JS.
- */
-export const RAMP_STEPS = ['lightest', 'light', 'base', 'dark', 'darkest'] as const
-
-export const RAMP_ROLES: ReadonlyArray<{ role: string; label: string; note?: string }> = [
-  { role: 'primary', label: 'Primary' },
-  { role: 'secondary', label: 'Secondary' },
-  { role: 'accent', label: 'Accent' },
-  { role: 'success', label: 'Success' },
-  { role: 'warning', label: 'Warning' },
-  { role: 'error', label: 'Error', note: 'always red' },
-  { role: 'info', label: 'Info' },
-]
-
-/** The surface tokens the tint leans toward the brand — shown as a ramp too. */
-export const SURFACE_SWATCHES: ReadonlyArray<{ token: string; label: string }> = [
-  { token: 'background', label: 'bg' },
-  { token: 'surface', label: 'surface' },
-  { token: 'border-default', label: 'border' },
-  { token: 'text-secondary', label: 'muted' },
-  { token: 'text-primary', label: 'text' },
 ]

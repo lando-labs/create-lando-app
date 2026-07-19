@@ -17,8 +17,8 @@ import { PalettePreview } from './PalettePreview'
 import {
   ensureAccessiblePrimary,
   buildPalette,
-  emitLayerApp,
-  paletteVars,
+  buildProductTheme,
+  formatThemeSource,
   hexToOklch,
   type RampType,
   type TintStrength,
@@ -49,8 +49,10 @@ export function ColorFoundation() {
     () => buildPalette(accessible.oklch, ramp, pinnedSecondary),
     [accessible.oklch, ramp, pinnedSecondary],
   )
-  const artifact = useMemo(() => emitLayerApp(palette, tint), [palette, tint])
-  const previewVars = useMemo(() => paletteVars(palette), [palette])
+  // The DS ProductTheme is the single source of truth: it drives the live
+  // preview (via ThemeScope) AND is the copy-paste artifact (for ThemeProvider).
+  const theme = useMemo(() => buildProductTheme(palette, tint), [palette, tint])
+  const artifact = useMemo(() => formatThemeSource(theme), [theme])
 
   const commitPrimary = (value: string) => {
     setHexDraft(value)
@@ -99,12 +101,7 @@ export function ColorFoundation() {
         onTintChange={setTint}
         artifact={artifact}
       />
-      <PalettePreview
-        primary={accessible.oklch}
-        tint={tint}
-        previewVars={previewVars}
-        showHarmonyCaption={customizeOpen}
-      />
+      <PalettePreview theme={theme} />
     </Grid>
   )
 }

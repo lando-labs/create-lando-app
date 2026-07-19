@@ -1,22 +1,26 @@
 'use client'
 
 import { ThemeProvider } from '@lando-labs/lando-ds'
+// To brand the app: generate a theme on the getting-started page, save it as
+// `app/brand-theme.ts`, then uncomment these two lines.
+// import { brandTheme } from './brand-theme'
 
 /**
- * The neutral base. Your brand colours live in `app/globals.css`, as
- * `@layer app` custom properties (`--color-primary`, `--color-secondary`,
- * `--color-accent`, plus the tuned semantics) — see the getting-started page.
- * Those CSS custom properties paint on the first frame, same as this preset,
- * so there's nothing here to keep in sync when you change your palette.
+ * THE THEME LIVES HERE.
  *
- * `preset` stays 'brand-neutral': it's the base your `@layer app` overrides
- * sit on top of. Swapping it for a different preset still works (the two are
- * independent), but the getting-started flow assumes this base.
+ * `preset` is the DS's neutral starting point. To make the app yours, the
+ * getting-started page generates a DS `ProductTheme` from a colour you pick;
+ * save it as `app/brand-theme.ts` and pass it as `defaultProductTheme` below —
+ * the DS derives every ramp, hover/active state and surface from it. Your AI
+ * reads this file rather than keeping its own copy of your colours.
+ *
+ * Global CSS is imported once, in `app/layout.tsx`, in the golden-path order
+ * (layer-order primer → globals → DS styles). Don't re-import it here.
  */
-const THEME_PRESET = 'brand-neutral'
-
-// Global CSS is imported once, in `app/layout.tsx`, in the golden-path order
-// (layer-order primer → globals → DS styles). Don't re-import it here.
 export function Providers({ children }: { children: React.ReactNode }) {
-  return <ThemeProvider preset={THEME_PRESET}>{children}</ThemeProvider>
+  return (
+    <ThemeProvider preset="brand-neutral" /* defaultProductTheme={brandTheme} */>
+      {children}
+    </ThemeProvider>
+  )
 }
