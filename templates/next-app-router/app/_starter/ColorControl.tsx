@@ -9,7 +9,6 @@
  * Delete this file when you replace the starter page.
  */
 import { type CSSProperties, type ChangeEvent } from 'react'
-import { ChevronDown } from 'lucide-react'
 import { Card } from '@lando-labs/lando-ds/components/Card/Card'
 import { CardHeader } from '@lando-labs/lando-ds/components/Card/CardHeader'
 import { CardTitle } from '@lando-labs/lando-ds/components/Card/CardTitle'
@@ -78,9 +77,6 @@ export interface ColorControlProps {
   onRampChange: (ramp: RampType) => void
   pinnedSecondary: Oklch | undefined
 
-  customizeOpen: boolean
-  onToggleCustomize: () => void
-
   secondaryOn: boolean
   onToggleSecondary: () => void
   secondaryHex: string
@@ -106,8 +102,6 @@ export function ColorControl({
   ramp,
   onRampChange,
   pinnedSecondary,
-  customizeOpen,
-  onToggleCustomize,
   secondaryOn,
   onToggleSecondary,
   secondaryHex,
@@ -225,95 +219,78 @@ export function ColorControl({
               </Inline>
             </Stack>
 
-            {/* The deep end — off by default. Toggling a ramp changes nothing on
-                the real components in the preview card (and under Tonal,
-                primary/accent are byte-identical tokens), so it's opt-in. */}
-            <Stack gap="md">
-              <Inline>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onToggleCustomize}
-                  aria-expanded={customizeOpen}
-                  aria-controls="harmony-customize"
-                  rightIcon={
-                    <ChevronDown
-                      size={16}
-                      style={{
-                        transform: customizeOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                        transition: 'var(--transitions-transform)',
-                      }}
-                    />
-                  }
-                >
-                  Customise secondary + accent (optional)
-                </Button>
-              </Inline>
-              {/* Conditionally rendered, not just visually collapsed. The DS
-                  Collapsible hides closed content with height:0 + aria-hidden but
-                  leaves its controls focusable and in the tab order (no `inert`), so
-                  a keyboard user would tab into invisible fields. Unmounting avoids
-                  that; the ramp + secondary STATE lives in the parent, so it
-                  survives the close and is intact when reopened. */}
-              {customizeOpen && (
-                <Stack gap="md" id="harmony-customize">
-                  <Stack gap="xs">
-                    <Text size="sm" color="var(--color-text-secondary)">
-                      How secondary + accent relate to primary
-                    </Text>
-                    <SegmentedControl options={rampOptions} value={ramp} onChange={(v) => onRampChange(v as RampType)} fullWidth />
-                    {selectedRamp ? (
-                      <Text size="sm" color="var(--color-text-secondary)">
-                        {selectedRamp.blurb}
-                      </Text>
-                    ) : null}
-                  </Stack>
+            <Divider />
 
-                  <Stack gap="sm">
-                    <Switch label="Pin a secondary colour" checked={secondaryOn} onChange={() => onToggleSecondary()} />
-                    {secondaryOn ? (
-                      <Inline gap="md" align="end" wrap>
-                        <input
-                          id="secondary-color-well"
-                          type="color"
-                          value={HEX_RE.test(secondaryHex) ? secondaryHex : '#0F766E'}
-                          onChange={(e: ChangeEvent<HTMLInputElement>) => onPickSecondary(e.target.value)}
-                          aria-label="Pick secondary colour"
-                          style={colorInputStyle}
-                        />
-                        <Inline grow={1}>
-                          <Input
-                            id="secondary-hex"
-                            name="secondary-hex"
-                            label="Secondary"
-                            value={secondaryDraft}
-                            onChange={(e: ChangeEvent<HTMLInputElement>) => onSecondaryDraftChange(e.target.value)}
-                            onBlur={onSecondaryDraftBlur}
-                            placeholder="#0F766E"
-                            error={
-                              secondaryDraft && !HEX_RE.test(secondaryDraft)
-                                ? 'Needs a 6-digit hex, e.g. #0F766E'
-                                : undefined
-                            }
-                          />
-                        </Inline>
-                      </Inline>
-                    ) : (
-                      <Text size="sm" color="var(--color-text-secondary)">
-                        Off by default — accent derives from primary alone.
-                      </Text>
-                    )}
-                  </Stack>
-                </Stack>
+            {/* Secondary & accent — how the derived roles relate to your
+                primary. Always visible now (was a fiddly, easy-to-miss
+                expandable); the ramp swatches preview each option inline. */}
+            <Stack gap="sm">
+              <Stack gap="2xs">
+                <Text weight="semibold" size="sm">
+                  Secondary &amp; accent
+                </Text>
+                <Text size="sm" color="var(--color-text-secondary)">
+                  How the derived roles relate to your primary.
+                </Text>
+              </Stack>
+              <SegmentedControl
+                options={rampOptions}
+                value={ramp}
+                onChange={(v) => onRampChange(v as RampType)}
+                fullWidth
+              />
+              {selectedRamp ? (
+                <Text size="sm" color="var(--color-text-secondary)">
+                  {selectedRamp.blurb}
+                </Text>
+              ) : null}
+              <Switch label="Pin a secondary colour" checked={secondaryOn} onChange={() => onToggleSecondary()} />
+              {secondaryOn ? (
+                <Inline gap="md" align="end" wrap>
+                  <input
+                    id="secondary-color-well"
+                    type="color"
+                    value={HEX_RE.test(secondaryHex) ? secondaryHex : '#0F766E'}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => onPickSecondary(e.target.value)}
+                    aria-label="Pick secondary colour"
+                    style={colorInputStyle}
+                  />
+                  <Inline grow={1}>
+                    <Input
+                      id="secondary-hex"
+                      name="secondary-hex"
+                      label="Secondary"
+                      value={secondaryDraft}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => onSecondaryDraftChange(e.target.value)}
+                      onBlur={onSecondaryDraftBlur}
+                      placeholder="#0F766E"
+                      error={
+                        secondaryDraft && !HEX_RE.test(secondaryDraft)
+                          ? 'Needs a 6-digit hex, e.g. #0F766E'
+                          : undefined
+                      }
+                    />
+                  </Inline>
+                </Inline>
+              ) : (
+                <Text size="sm" color="var(--color-text-secondary)">
+                  Off by default — accent derives from primary alone.
+                </Text>
               )}
             </Stack>
 
-            {/* Lean the whole theme — light AND dark — toward the brand. Off by
-                default; the emitted CSS only carries surface overrides when it's on. */}
-            <Stack gap="xs">
-              <Text size="sm" color="var(--color-text-secondary)">
-                Tint surfaces toward your brand
-              </Text>
+            <Divider />
+
+            {/* Lean the whole theme — light AND dark — toward the brand. */}
+            <Stack gap="sm">
+              <Stack gap="2xs">
+                <Text weight="semibold" size="sm">
+                  Surface tint
+                </Text>
+                <Text size="sm" color="var(--color-text-secondary)">
+                  Nudge backgrounds, surfaces and borders toward your hue.
+                </Text>
+              </Stack>
               <SegmentedControl
                 options={TINT_STRENGTHS.map((t) => ({ value: t.id, label: t.label }))}
                 value={tint}
@@ -321,8 +298,7 @@ export function ColorControl({
                 fullWidth
               />
               <Text size="sm" color="var(--color-text-secondary)">
-                Nudges backgrounds, surfaces and borders toward your hue in both modes — same
-                lightness, so contrast holds. Error stays red.
+                Same lightness in both modes, so contrast holds. Error stays red.
               </Text>
             </Stack>
           </Stack>

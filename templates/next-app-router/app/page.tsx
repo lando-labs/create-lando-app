@@ -17,7 +17,6 @@ import { Heading } from '@lando-labs/lando-ds/components/Heading/Heading'
 import { Text } from '@lando-labs/lando-ds/components/Text/Text'
 import { Lede } from '@lando-labs/lando-ds/components/ArticleCard/Lede'
 import { PageHeader } from '@lando-labs/lando-ds/components/PageHeader/PageHeader'
-import { StepProgress } from '@lando-labs/lando-ds/components/StepProgress/StepProgress'
 import { Callout } from '@lando-labs/lando-ds/components/Callout/Callout'
 import { Badge } from '@lando-labs/lando-ds/components/Badge/Badge'
 import { Card } from '@lando-labs/lando-ds/components/Card/Card'
@@ -91,14 +90,6 @@ export default async function HomePage() {
           </Lede>
         </Stack>
 
-        {/* Spine — decorative, mirrors the numbered section headings below. */}
-        <StepProgress
-          steps={['Your palette', 'Hand off to your AI']}
-          currentStep={0}
-          variant="numbered"
-          aria-label="Getting started steps"
-        />
-
         {/* 1 — Your palette. Iron out your colours, see them on real
             components, copy the CSS. */}
         <Stack gap="lg" as="section">
@@ -118,7 +109,8 @@ export default async function HomePage() {
             in the colour you just picked (Callout's `primary` accent reads
             `--color-primary`). */}
         <Callout accent="primary" icon={<ArrowRight size={16} />}>
-          Palette locked in. Now hand the wheel to your AI — it already knows this design system.
+          Palette locked in. Now hand the wheel to your AI — it already knows this design system via
+          the MCP.
         </Callout>
 
         {/* 2 — Build with your AI. A slim brief, then the call-to-action. */}

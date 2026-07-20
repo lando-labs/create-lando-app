@@ -42,9 +42,6 @@ export function ColorFoundation() {
   const [primaryHex, setPrimaryHex] = useState(QUICK_START[0].hex) // committed, drives the palette
   const [hexDraft, setHexDraft] = useState(QUICK_START[0].hex) // the text field's live value; may be mid-edit
   const [ramp, setRamp] = useState<RampType>('tonal')
-  // Lifted here (not local to ColorControl): it gates both the harmony
-  // controls' visibility AND the preview card's "derived roles" caption.
-  const [customizeOpen, customizeHandlers] = useDisclosure(false)
   const [secondaryOn, secondaryHandlers] = useDisclosure(false)
   const [secondaryHex, setSecondaryHex] = useState('#0F766E')
   const [secondaryDraft, setSecondaryDraft] = useState('#0F766E')
@@ -97,7 +94,7 @@ export function ColorFoundation() {
   }
 
   return (
-    <Grid columns={{ lg: 2 }} gap="xl" align="start">
+    <Grid columns={{ lg: 2 }} gap="var(--spacing-2xl)" align="start">
       <ColorControl
         primaryHex={primaryHex}
         hexDraft={hexDraft}
@@ -109,8 +106,6 @@ export function ColorFoundation() {
         ramp={ramp}
         onRampChange={setRamp}
         pinnedSecondary={pinnedSecondary}
-        customizeOpen={customizeOpen}
-        onToggleCustomize={customizeHandlers.toggle}
         secondaryOn={secondaryOn}
         onToggleSecondary={secondaryHandlers.toggle}
         secondaryHex={secondaryHex}

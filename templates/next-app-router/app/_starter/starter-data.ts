@@ -41,7 +41,7 @@ export const FILE_MAP: readonly FileMapEntry[] = [
 ]
 
 export const PROMPTS: readonly string[] = [
-  'Build a dashboard with metric cards and a recent-activity table.',
-  'Add a settings form with validation and a save action.',
-  'Give me a sidebar nav with the routes I have so far.',
+  'Using the Lando DS, build a dashboard with metric cards and a recent-activity table.',
+  'Using the Lando DS, add a settings form with validation and a save action.',
+  'Build an app that [your idea] — using the Lando DS.',
 ]
