@@ -16,7 +16,7 @@
 export const QUICK_START: ReadonlyArray<{ hex: string; name: string }> = [
   { hex: '#4F46E5', name: 'Indigo' },
   { hex: '#0F766E', name: 'Teal' },
-  { hex: '#BE123C', name: 'Rose' },
+  { hex: '#7C3AED', name: 'Violet' },
   { hex: '#C2410C', name: 'Orange' },
   { hex: '#334155', name: 'Slate' },
 ]

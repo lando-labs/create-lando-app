@@ -175,7 +175,9 @@ async function exists(p) {
  *  2. **The engine outputs a DS `ProductTheme`** (`buildProductTheme`) — it must
  *     NOT hand-write CSS (`@layer app` / `color-mix()` / `data-theme=`); the DS
  *     derives ramps/states/surfaces from the theme.
- *  3. **The preview applies the theme via the DS `ThemeScope`**, not injected vars.
+ *  3. **The page applies the theme at `:root` via `setProductTheme`** (page-level
+ *     theming, #34) so ramps/states are truthful — not injected vars, not a scoped
+ *     `ThemeScope`. Accent is demonstrated on a real consumer (`var(--color-accent)`).
  *  4. **Danger stays red** — the theme never sets an `error` colour.
  *  5. **The palette shows on real DS components**, and the brief peek reads the
  *     real `AGENTS.md`.
@@ -208,13 +210,24 @@ async function assertStarterPage(projectDir) {
   if (!/ProductTheme/.test(color)) fail('color.ts no longer produces a DS ProductTheme')
 
   // 2b — NO hand-rolled CSS/colour injection. The theme flows through the DS
-  // (ProductTheme + ThemeScope); the engine must not hand-write custom properties.
+  // ProductTheme; the engine must not hand-write custom properties.
   const handRolled = color.match(/@layer app|color-mix\(|data-theme=/)
   if (handRolled) {
     fail(`color.ts hand-writes CSS (${handRolled[0]}) — the theme must go through the DS ProductTheme, not injected CSS`)
   }
-  if (!/ThemeScope/.test(starterSrc)) {
-    fail('the preview no longer applies the theme via the DS ThemeScope — it must not inject vars by hand')
+
+  // 2c — page-level theming (#34): the starter applies the ProductTheme at the
+  // document root via `setProductTheme`, so the whole page reskins with truthful
+  // ramps/hover/active. A scoped ThemeScope can't re-derive :root ramps (DS #543),
+  // so page-level is the truthful path.
+  if (!/setProductTheme/.test(starterSrc)) {
+    fail('the starter no longer applies the theme at :root via setProductTheme — page-level theming (#34) is the truthful path')
+  }
+
+  // 2d — accent is demonstrated on a real consumer. Nothing in the DS base reads
+  // `--color-accent`, so a reference app must show its role explicitly.
+  if (!/var\(--color-accent/.test(starterSrc)) {
+    fail('accent is not demonstrated — a component must consume var(--color-accent) (#34)')
   }
 
   // 3 — danger stays the DS default red: the theme never sets an `error` colour.
@@ -235,7 +248,7 @@ async function assertStarterPage(projectDir) {
   }
   if (/\{\{[A-Z_]+\}\}/.test(page)) fail('app/page.tsx still contains an unsubstituted {{PLACEHOLDER}}')
 
-  log('starter page ok: presets removed, engine → ProductTheme, no hand-written CSS, theme via ThemeScope, error red')
+  log('starter page ok: presets removed, engine → ProductTheme, no hand-written CSS, theme applied at :root via setProductTheme, accent demonstrated, error red')
 }
 
 /**

@@ -6,9 +6,21 @@
  * two-column workspace — controls on the left, live preview on the right —
  * via `./color`, the DS's own OKLCH + contrast maths.
  *
+ * The page IS the preview (DS issue #34): the generated `ProductTheme` is
+ * applied at the document root via `useTheme().setProductTheme`, so this
+ * whole page — not a scoped panel — renders under it. That's what makes the
+ * ramps and hover/active states truthful: the DS derives
+ * `--color-<role>-{lightest…darkest}` / `-hover` / `-active` from
+ * `color-mix()` expressions anchored to the base role vars on `:root`, so
+ * setting the base vars there (not on some inner scope) is what makes the
+ * derived ramps recompute correctly. The effect cleans up on unmount
+ * (`setProductTheme(undefined)`) so this deletable starter leaves no lasting
+ * `:root` or localStorage effect once you delete `app/_starter/`.
+ *
  * Delete this file when you replace the starter page.
  */
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useTheme } from '@lando-labs/lando-ds'
 import { useDisclosure } from '@lando-labs/lando-ds/hooks'
 import { Grid } from '@lando-labs/lando-ds/components/Grid/Grid'
 import { QUICK_START } from './starter-data'
@@ -50,9 +62,18 @@ export function ColorFoundation() {
     [accessible.oklch, ramp, pinnedSecondary],
   )
   // The DS ProductTheme is the single source of truth: it drives the live
-  // preview (via ThemeScope) AND is the copy-paste artifact (for ThemeProvider).
+  // preview (applied at :root, below) AND is the copy-paste artifact (for
+  // ThemeProvider).
   const theme = useMemo(() => buildProductTheme(palette, tint), [palette, tint])
   const artifact = useMemo(() => formatThemeSource(theme), [theme])
+
+  // Apply at :root — see the file-level comment for why this (not a scoped
+  // ThemeScope) is what makes the preview truthful.
+  const { setProductTheme } = useTheme()
+  useEffect(() => {
+    setProductTheme(theme)
+    return () => setProductTheme(undefined)
+  }, [theme, setProductTheme])
 
   const commitPrimary = (value: string) => {
     setHexDraft(value)
@@ -101,7 +122,7 @@ export function ColorFoundation() {
         onTintChange={setTint}
         artifact={artifact}
       />
-      <PalettePreview theme={theme} />
+      <PalettePreview />
     </Grid>
   )
 }

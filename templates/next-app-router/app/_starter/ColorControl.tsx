@@ -46,6 +46,15 @@ const HEX_RE = /^#[0-9a-fA-F]{6}$/
 // The native OS colour picker — the one browser primitive the DS has no
 // component for. Minimal tokened sizing; everything else on this page is a DS
 // component.
+//
+// It sits beside its `Input`, not inside one via `leftIcon`: the DS's
+// `leftIcon` slot renders `aria-hidden="true"` with `pointer-events: none`
+// (it's a decorative-icon slot, not a content slot), so a real interactive
+// control placed there would be both unclickable and invisible to a screen
+// reader. Instead, a single visible `Input label="Primary"` governs the
+// pair — the well carries only its own `aria-label` — and `align="end"`
+// pins the well's bottom edge to the input's control (not its label), which
+// is what actually lines the pair up.
 const colorInputStyle: CSSProperties = {
   width: '3rem',
   height: '2.5rem',
@@ -143,28 +152,25 @@ export function ColorControl({
       <CardBody>
         <Stack gap="lg">
           <Stack gap="md">
+            {/* Shows the colour you chose, not the corrected one — the well and
+                hex field reflect your input; the preview reflects the safe
+                output; the "Fix contrast" button bridges the two. One visible
+                label ("Primary") governs the pair; the well carries its own
+                `aria-label` since it has no label slot of its own. */}
             <Inline gap="md" align="end" wrap>
-              <Stack gap="xs">
-                <Text as="label" htmlFor="primary-color-well" size="sm" color="var(--color-text-secondary)">
-                  Primary
-                </Text>
-                {/* Shows the colour you chose, not the corrected one — the well and
-                    hex field reflect your input; the preview reflects the safe
-                    output; the "Fix contrast" button bridges the two. */}
-                <input
-                  id="primary-color-well"
-                  type="color"
-                  value={primaryHex}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => onPickPrimary(e.target.value)}
-                  aria-label="Pick primary colour"
-                  style={colorInputStyle}
-                />
-              </Stack>
+              <input
+                id="primary-color-well"
+                type="color"
+                value={primaryHex}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => onPickPrimary(e.target.value)}
+                aria-label="Pick primary colour"
+                style={colorInputStyle}
+              />
               <Inline grow={1}>
                 <Input
                   id="primary-hex"
                   name="primary-hex"
-                  label="Hex"
+                  label="Primary"
                   value={hexDraft}
                   onChange={(e: ChangeEvent<HTMLInputElement>) => onHexDraftChange(e.target.value)}
                   onBlur={onHexDraftBlur}
@@ -267,24 +273,19 @@ export function ColorControl({
                     <Switch label="Pin a secondary colour" checked={secondaryOn} onChange={() => onToggleSecondary()} />
                     {secondaryOn ? (
                       <Inline gap="md" align="end" wrap>
-                        <Stack gap="xs">
-                          <Text as="label" htmlFor="secondary-color-well" size="sm" color="var(--color-text-secondary)">
-                            Secondary
-                          </Text>
-                          <input
-                            id="secondary-color-well"
-                            type="color"
-                            value={HEX_RE.test(secondaryHex) ? secondaryHex : '#0F766E'}
-                            onChange={(e: ChangeEvent<HTMLInputElement>) => onPickSecondary(e.target.value)}
-                            aria-label="Pick secondary colour"
-                            style={colorInputStyle}
-                          />
-                        </Stack>
+                        <input
+                          id="secondary-color-well"
+                          type="color"
+                          value={HEX_RE.test(secondaryHex) ? secondaryHex : '#0F766E'}
+                          onChange={(e: ChangeEvent<HTMLInputElement>) => onPickSecondary(e.target.value)}
+                          aria-label="Pick secondary colour"
+                          style={colorInputStyle}
+                        />
                         <Inline grow={1}>
                           <Input
                             id="secondary-hex"
                             name="secondary-hex"
-                            label="Hex"
+                            label="Secondary"
                             value={secondaryDraft}
                             onChange={(e: ChangeEvent<HTMLInputElement>) => onSecondaryDraftChange(e.target.value)}
                             onBlur={onSecondaryDraftBlur}
@@ -346,7 +347,9 @@ export function ColorControl({
               <Text as="span" variant="mono">
                 app/providers.tsx
               </Text>{' '}
-              — the DS derives every ramp and state from it.
+              — the DS derives every ramp and state from it. It&rsquo;s already applied live on this
+              page (that&rsquo;s what&rsquo;s driving the preview), so this step is what makes it
+              stick after you delete <Text as="span" variant="mono">app/_starter/</Text>.
             </Text>
             {accessible.corrected ? (
               <Text size="sm" color="var(--color-text-secondary)">
