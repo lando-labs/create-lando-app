@@ -41,22 +41,20 @@ There is a `nextjs-lando-ds` agent set up for this project (Claude Code:
 
 ## Theme: read the file, don't guess
 
-**This app's brand palette lives in `app/globals.css`, as CSS custom properties
-inside the `@layer app` block** — `--color-primary`, `--color-secondary`,
-`--color-accent`, and tuned `--color-success-base` / `--color-warning-base` /
-`--color-info-base`. Set `--color-primary` and the whole ramp follows; the DS
-derives every shade from these role tokens. `error` is deliberately never
-overridden — danger stays the DS default red.
+**This app's theme lives in `app/providers.tsx`.** Its `<ThemeProvider>` takes a
+DS `ProductTheme` via `defaultProductTheme`. If a brand theme has been set up it's
+in **`app/brand-theme.ts`** — read that for the actual colours. The theme carries
+only base role colours (`primary` / `secondary` / `accent`, the semantics, and
+optional mode-aware surfaces); **the DS derives every ramp, hover/active state and
+surface from them.** `error` is deliberately never overridden — danger stays the
+DS default red.
 
-`app/providers.tsx` stays on the `'brand-neutral'` preset as the base your
-`@layer app` overrides sit on top of. If the human asks to change the palette,
-edit `globals.css`, not `providers.tsx` — and don't touch `app/layout.tsx`. CSS
-custom properties paint on the first frame, so there's no flash to manage and
-no second file to keep in sync.
-
-Never mirror the palette's *values* into this file or into your own notes. Read
-`globals.css` each time. That way nothing has to be kept in sync when the human
-changes it.
+- **Never hand-write a `--color-*` value or a `color-mix()`.** Set the base colour
+  in the `ProductTheme` and let the DS derive the rest (that's what `ThemeProvider`
+  and `ThemeScope` are for).
+- To change the palette, regenerate it on the getting-started page (or edit
+  `app/brand-theme.ts`) and make sure it's passed as `defaultProductTheme`.
+- Never mirror the theme's *values* into your own notes. Read the file each time.
 
 ## Don't break the CSS wiring
 
@@ -76,8 +74,8 @@ The reasoning is commented in `app/globals.css` if you need it.
 | --- | --- |
 | `app/page.tsx` | The getting-started page. Replace it — that's the point. |
 | `app/layout.tsx` | HTML shell, CSS import order, anti-flash theme script |
-| `app/providers.tsx` | The theme base preset (`'brand-neutral'`) |
-| `app/globals.css` | Your CSS. App reset lives in `@layer app-reset`; **your brand palette lives in `@layer app`**. |
+| `app/providers.tsx` | **The theme** — `<ThemeProvider>` + your `ProductTheme` (`app/brand-theme.ts`) |
+| `app/globals.css` | Your CSS. App reset lives in `@layer app-reset` (the #462 wiring). |
 | `AGENTS.md` | This brief |
 
 ## Reference (not instructions)

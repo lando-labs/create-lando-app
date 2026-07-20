@@ -30,23 +30,31 @@ import {
   type SegmentedControlOption,
 } from '@lando-labs/lando-ds/components/SegmentedControl/SegmentedControl'
 import { QUICK_START } from './starter-data'
-import { deriveHarmony, oklchToHex, RAMP_TYPES, type AccessibleColor, type Oklch, type RampType } from './color'
+import {
+  deriveHarmony,
+  oklchToHex,
+  RAMP_TYPES,
+  TINT_STRENGTHS,
+  type AccessibleColor,
+  type Oklch,
+  type RampType,
+  type TintStrength,
+} from './color'
 
 const HEX_RE = /^#[0-9a-fA-F]{6}$/
 
-// Fixed affordance sizes (a colour well, a swatch dot) — an intrinsic control
-// dimension, like an icon, not layout rhythm, so an explicit rem is correct
-// here rather than a spacing-scale token.
-const swatchDotStyle = (hex: string, active: boolean): CSSProperties => ({
-  width: '2rem',
-  height: '2rem',
-  borderRadius: 'var(--radius-full)',
-  border: active ? '2px solid var(--color-text-primary)' : '1px solid var(--color-border-default)',
-  background: hex,
-  cursor: 'pointer',
-  padding: 0,
-})
-
+// The native OS colour picker — the one browser primitive the DS has no
+// component for. Minimal tokened sizing; everything else on this page is a DS
+// component.
+//
+// It sits beside its `Input`, not inside one via `leftIcon`: the DS's
+// `leftIcon` slot renders `aria-hidden="true"` with `pointer-events: none`
+// (it's a decorative-icon slot, not a content slot), so a real interactive
+// control placed there would be both unclickable and invisible to a screen
+// reader. Instead, a single visible `Input label="Primary"` governs the
+// pair — the well carries only its own `aria-label` — and `align="end"`
+// pins the well's bottom edge to the input's control (not its label), which
+// is what actually lines the pair up.
 const colorInputStyle: CSSProperties = {
   width: '3rem',
   height: '2.5rem',
@@ -81,6 +89,9 @@ export interface ColorControlProps {
   onSecondaryDraftChange: (value: string) => void
   onSecondaryDraftBlur: () => void
 
+  tint: TintStrength
+  onTintChange: (tint: TintStrength) => void
+
   artifact: string
 }
 
@@ -104,6 +115,8 @@ export function ColorControl({
   onPickSecondary,
   onSecondaryDraftChange,
   onSecondaryDraftBlur,
+  tint,
+  onTintChange,
   artifact,
 }: ColorControlProps) {
   const rampOptions: SegmentedControlOption[] = RAMP_TYPES.map((r) => {
@@ -139,28 +152,25 @@ export function ColorControl({
       <CardBody>
         <Stack gap="lg">
           <Stack gap="md">
+            {/* Shows the colour you chose, not the corrected one — the well and
+                hex field reflect your input; the preview reflects the safe
+                output; the "Fix contrast" button bridges the two. One visible
+                label ("Primary") governs the pair; the well carries its own
+                `aria-label` since it has no label slot of its own. */}
             <Inline gap="md" align="end" wrap>
-              <Stack gap="xs">
-                <Text as="label" htmlFor="primary-color-well" size="sm" color="var(--color-text-secondary)">
-                  Primary
-                </Text>
-                {/* Shows the colour you chose, not the corrected one — the well and
-                    hex field reflect your input; the preview reflects the safe
-                    output; the "Fix contrast" button bridges the two. */}
-                <input
-                  id="primary-color-well"
-                  type="color"
-                  value={primaryHex}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => onPickPrimary(e.target.value)}
-                  aria-label="Pick primary colour"
-                  style={colorInputStyle}
-                />
-              </Stack>
+              <input
+                id="primary-color-well"
+                type="color"
+                value={primaryHex}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => onPickPrimary(e.target.value)}
+                aria-label="Pick primary colour"
+                style={colorInputStyle}
+              />
               <Inline grow={1}>
                 <Input
                   id="primary-hex"
                   name="primary-hex"
-                  label="Hex"
+                  label="Primary"
                   value={hexDraft}
                   onChange={(e: ChangeEvent<HTMLInputElement>) => onHexDraftChange(e.target.value)}
                   onBlur={onHexDraftBlur}
@@ -202,14 +212,15 @@ export function ColorControl({
               </Text>
               <Inline gap="sm" wrap>
                 {QUICK_START.map((s) => (
-                  <button
+                  <Button
                     key={s.hex}
-                    type="button"
+                    variant={primaryHex === s.hex ? 'outline' : 'ghost'}
+                    size="sm"
                     onClick={() => onPickPrimary(s.hex)}
                     aria-label={`Use ${s.name}`}
-                    title={s.name}
-                    style={swatchDotStyle(s.hex, primaryHex === s.hex)}
-                  />
+                  >
+                    <ColorSwatch color={s.hex} size="sm" shape="circle" aria-label="" />
+                  </Button>
                 ))}
               </Inline>
             </Stack>
@@ -262,24 +273,19 @@ export function ColorControl({
                     <Switch label="Pin a secondary colour" checked={secondaryOn} onChange={() => onToggleSecondary()} />
                     {secondaryOn ? (
                       <Inline gap="md" align="end" wrap>
-                        <Stack gap="xs">
-                          <Text as="label" htmlFor="secondary-color-well" size="sm" color="var(--color-text-secondary)">
-                            Secondary
-                          </Text>
-                          <input
-                            id="secondary-color-well"
-                            type="color"
-                            value={HEX_RE.test(secondaryHex) ? secondaryHex : '#0F766E'}
-                            onChange={(e: ChangeEvent<HTMLInputElement>) => onPickSecondary(e.target.value)}
-                            aria-label="Pick secondary colour"
-                            style={colorInputStyle}
-                          />
-                        </Stack>
+                        <input
+                          id="secondary-color-well"
+                          type="color"
+                          value={HEX_RE.test(secondaryHex) ? secondaryHex : '#0F766E'}
+                          onChange={(e: ChangeEvent<HTMLInputElement>) => onPickSecondary(e.target.value)}
+                          aria-label="Pick secondary colour"
+                          style={colorInputStyle}
+                        />
                         <Inline grow={1}>
                           <Input
                             id="secondary-hex"
                             name="secondary-hex"
-                            label="Hex"
+                            label="Secondary"
                             value={secondaryDraft}
                             onChange={(e: ChangeEvent<HTMLInputElement>) => onSecondaryDraftChange(e.target.value)}
                             onBlur={onSecondaryDraftBlur}
@@ -301,25 +307,53 @@ export function ColorControl({
                 </Stack>
               )}
             </Stack>
+
+            {/* Lean the whole theme — light AND dark — toward the brand. Off by
+                default; the emitted CSS only carries surface overrides when it's on. */}
+            <Stack gap="xs">
+              <Text size="sm" color="var(--color-text-secondary)">
+                Tint surfaces toward your brand
+              </Text>
+              <SegmentedControl
+                options={TINT_STRENGTHS.map((t) => ({ value: t.id, label: t.label }))}
+                value={tint}
+                onChange={(v) => onTintChange(v as TintStrength)}
+                fullWidth
+              />
+              <Text size="sm" color="var(--color-text-secondary)">
+                Nudges backgrounds, surfaces and borders toward your hue in both modes — same
+                lightness, so contrast holds. Error stays red.
+              </Text>
+            </Stack>
           </Stack>
 
-          <Divider label="Your CSS" />
+          <Divider label="Your theme" />
 
           <Stack gap="sm">
             <Text size="sm">
-              Paste into{' '}
+              This is a DS{' '}
               <Text as="span" variant="mono">
-                app/globals.css
+                ProductTheme
               </Text>
-              , inside the{' '}
+              . Save it as{' '}
               <Text as="span" variant="mono">
-                @layer app
+                app/brand-theme.ts
               </Text>{' '}
-              block already there. No reroll needed — the same inputs always build the same palette.
+              and pass it to{' '}
+              <Text as="span" variant="mono">
+                {'<ThemeProvider defaultProductTheme={brandTheme}>'}
+              </Text>{' '}
+              in{' '}
+              <Text as="span" variant="mono">
+                app/providers.tsx
+              </Text>{' '}
+              — the DS derives every ramp and state from it. It&rsquo;s already applied live on this
+              page (that&rsquo;s what&rsquo;s driving the preview), so this step is what makes it
+              stick after you delete <Text as="span" variant="mono">app/_starter/</Text>.
             </Text>
             {accessible.corrected ? (
               <Text size="sm" color="var(--color-text-secondary)">
-                Emitted with the contrast-safe value (
+                Built with the contrast-safe primary (
                 <Text as="span" variant="mono">
                   {accessible.hex}
                 </Text>
@@ -327,10 +361,14 @@ export function ColorControl({
                 <Text as="span" variant="mono">
                   {primaryHex}
                 </Text>
-                ). Click <strong>Fix contrast</strong> above to make them match.
+                ). Click{' '}
+                <Text as="span" weight="semibold">
+                  Fix contrast
+                </Text>{' '}
+                above to make them match.
               </Text>
             ) : null}
-            <CodeBlock code={artifact} language="css" title="app/globals.css — inside @layer app" />
+            <CodeBlock code={artifact} language="tsx" title="app/brand-theme.ts" />
           </Stack>
         </Stack>
       </CardBody>

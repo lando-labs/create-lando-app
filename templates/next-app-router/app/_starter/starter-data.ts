@@ -16,7 +16,7 @@
 export const QUICK_START: ReadonlyArray<{ hex: string; name: string }> = [
   { hex: '#4F46E5', name: 'Indigo' },
   { hex: '#0F766E', name: 'Teal' },
-  { hex: '#BE123C', name: 'Rose' },
+  { hex: '#7C3AED', name: 'Violet' },
   { hex: '#C2410C', name: 'Orange' },
   { hex: '#334155', name: 'Slate' },
 ]
@@ -35,8 +35,8 @@ export interface FileMapEntry {
 export const FILE_MAP: readonly FileMapEntry[] = [
   { path: 'app/page.tsx', owns: 'This page. Replace it — that’s the point.' },
   { path: 'app/layout.tsx', owns: 'The HTML shell and page metadata.' },
-  { path: 'app/providers.tsx', owns: 'The theme base. Your brand palette lives in globals.css.' },
-  { path: 'app/globals.css', owns: 'Your CSS — including the @layer app block you just copied into.' },
+  { path: 'app/providers.tsx', owns: 'The theme — pass your ProductTheme here.' },
+  { path: 'app/globals.css', owns: 'Your CSS. The app reset lives in @layer app-reset.' },
   { path: 'AGENTS.md', owns: 'What your AI is told about this project. Yours to edit.' },
 ]
 
