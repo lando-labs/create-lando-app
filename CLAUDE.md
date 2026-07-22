@@ -20,7 +20,7 @@ monorepo package. It publishes to public npm on its own release pipeline.
 
 | Repo (local dir) | npm package | Role |
 | --- | --- | --- |
-| `~/lando-labs/lando-ds` | `@lando-labs/lando-ds` | The component library. Source of truth for the cascade-layer contract. **Public on npm** (0.57.0). (`~/lando-labs/lando-labs-design-system` is the stale pre-rename checkout.) |
+| `~/lando-labs/lando-ds` | `@lando-labs/lando-ds` | The component library. Source of truth for the cascade-layer contract. **Public on npm** (0.58.0). (`~/lando-labs/lando-labs-design-system` is the stale pre-rename checkout.) |
 | `~/lando-labs/lando-ds-mcp` | `@lando-labs/lando-ds-mcp` | The MCP server. This repo's conventions (build, CI, publish) were modeled on it. **Public on npm** (4.0.0). The scaffolded `.mcp.json` wires it as server key `lando-ds`. |
 | `~/lando-labs/create-lando-app` *(this repo)* | `create-lando-app` | The scaffold CLI. |
 
@@ -83,7 +83,7 @@ local DS build instead:
 
 ```bash
 # in ~/lando-labs/lando-ds:  npm pack --ignore-scripts
-LANDO_DS_TARBALL=/abs/path/to/lando-labs-lando-ds-0.57.0.tgz npm test
+LANDO_DS_TARBALL=/abs/path/to/lando-labs-lando-ds-0.58.0.tgz npm test
 ```
 
 **Test a scaffold locally:**

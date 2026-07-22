@@ -23,7 +23,7 @@ import { join } from 'node:path'
  * Bumped by the DS-publish drift PR (CI), which also re-runs the consumer
  * smoke test to guard the #462 cascade-layer contract.
  */
-export const DS_VERSION = '^0.57.0'
+export const DS_VERSION = '^0.58.0'
 
 /**
  * The Lando DS MCP server package the `.mcp.json` drop-in points at.

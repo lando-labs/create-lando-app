@@ -35,24 +35,3 @@
 @layer app {
   /* Your app-level overrides go here. */
 }
-
-/*
- * Deliberate, token-driven override of a DS component. It lives UNLAYERED — the
- * highest-precedence bucket described above — NOT in `@layer app`, for a
- * concrete reason: Next injects the DS's per-component `*.module.css` unlayered,
- * and unlayered styles outrank every `@layer` (including `app`), so a layered
- * override can't win against the Switch's own rule. Unlayered can.
- *
- * The DS Switch's OFF-state track uses a near-surface token in dark mode
- * (`--color-surface-elevated`), ~the same lightness as the surface, so an off
- * switch is nearly invisible on a dark background. Lift the off track to a
- * visible border rung. Targets the DS's internal class (there's no token/prop
- * hook for the track colour); the `Switch-module_*` prefix is stable across
- * builds. Tracked upstream as lando-labs-design-system#544 — remove when that
- * lands.
- */
-[data-theme='dark']
-  [class*='Switch-module_switch']:not(:checked)
-  ~ [class*='Switch-module_track'] {
-  background-color: var(--color-border-strong);
-}
