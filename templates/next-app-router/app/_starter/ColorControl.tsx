@@ -323,9 +323,10 @@ export function ColorControl({
               <Text as="span" variant="mono">
                 app/providers.tsx
               </Text>{' '}
-              — the DS derives every ramp and state from it. It&rsquo;s already applied live on this
-              page (that&rsquo;s what&rsquo;s driving the preview), so this step is what makes it
-              stick after you delete <Text as="span" variant="mono">app/_starter/</Text>.
+              — the DS derives every ramp and state from it. It&rsquo;s what&rsquo;s driving the
+              preview; flip <Text as="span" weight="semibold">Apply to page</Text> to see it on this
+              whole page. Saving it is what makes it stick after you delete{' '}
+              <Text as="span" variant="mono">app/_starter/</Text>.
             </Text>
             {accessible.corrected ? (
               <Text size="sm" color="var(--color-text-secondary)">
