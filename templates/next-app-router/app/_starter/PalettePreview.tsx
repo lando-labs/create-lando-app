@@ -23,10 +23,17 @@
  * from this scope's `--color-surface`.
  *
  * The card header carries two controls: "Preview" flips this card's own
- * light/dark mode (via `previewMode`/`onTogglePreviewMode`, independent of the
- * page's `ThemeToggle` in the hero), and "Apply to page" (via
- * `applyToPage`/`onToggleApplyToPage`) hands off to `ColorFoundation` to reskin
- * `:root` with this same theme. They sit inside the scope so they swap with it.
+ * light/dark mode (via `previewMode`/`onTogglePreviewMode`), and "Apply to page"
+ * (via `applyToPage`/`onToggleApplyToPage`) hands off to `ColorFoundation` to
+ * reskin `:root` with this same theme. They sit inside the scope so they swap
+ * with it.
+ *
+ * This card is the ONLY place light/dark is exercised — the page itself has no
+ * toggle and stays light (`app/providers.tsx`). That's deliberate: the DS only
+ * renders a nested scope correctly in the light-page → dark-scope direction,
+ * since dark styling is an additive `[data-theme='dark']` override with no light
+ * counterpart to undo it (lando-labs/lando-ds#92). Keeping the page light means
+ * this toggle always renders truthfully in both of its states.
  *
  * Delete this file when you replace the starter page.
  */

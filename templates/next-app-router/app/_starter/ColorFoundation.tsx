@@ -18,8 +18,12 @@
  * - **The preview** (`PalettePreview`) always renders `theme` inside its own
  *   `<ThemeScope>`, with its own independent light/dark mode — #11 is what
  *   makes that scope's ramps and hover/active states truthful now.
- * - **Page light/dark** (`ThemeToggle`, in the hero) flips `:root`'s mode,
- *   independent of the preview's.
+ * - **The page stays light.** There is no page-level light/dark toggle;
+ *   `app/providers.tsx` pins `defaultMode="light"`. Light/dark is demonstrated
+ *   in the preview's own scope instead. That is deliberate: the DS renders a
+ *   nested scope correctly only in the light-page → dark-scope direction (a dark
+ *   page + light scope currently mis-renders — lando-labs/lando-ds#92), so
+ *   keeping the page light means the preview's toggle always works.
  *
  * The `setProductTheme` effect cleans up on unmount
  * (`setProductTheme(undefined)`) so this deletable starter leaves no lasting

@@ -2,8 +2,8 @@
 //
 // One path, thin frame: iron out your colours, hand off to your AI. This is a
 // Server Component — it reads your AGENTS.md off disk at build time for the
-// §2 brief peek. Only the interactive parts (theme toggle, colour
-// foundation, prompt copy buttons) are client components, in `./_starter`.
+// §2 brief peek. Only the interactive parts (colour foundation, prompt copy
+// buttons) are client components, in `./_starter`.
 //
 // This page is meant to be deleted. Replace it with your app — everything it
 // shows you is either in a file you now know about, or one MCP query away.
@@ -27,7 +27,6 @@ import { List } from '@lando-labs/lando-ds/components/List/List'
 import { ListItem } from '@lando-labs/lando-ds/components/List/ListItem'
 import { Divider } from '@lando-labs/lando-ds/components/Divider/Divider'
 import meta from '@lando-labs/lando-ds/meta'
-import { ThemeToggle } from './_starter/ThemeToggle'
 import { ColorFoundation } from './_starter/ColorFoundation'
 import { PromptRow } from './_starter/PromptRow'
 import { BRIEF_HIGHLIGHTS, FILE_MAP, PROMPTS } from './_starter/starter-data'
@@ -61,8 +60,10 @@ export default async function HomePage() {
   return (
     <Container size="xl" as="main">
       <Stack gap="2xl">
-        {/* 0 — Orient. The hero: who you are, what's running, and the toggle
-            that re-colours everything below it.
+        {/* 0 — Orient. The hero: who you are and what's running.
+            There is deliberately NO page-level light/dark toggle: the page stays
+            light (see `app/providers.tsx`), and light/dark is demonstrated in the
+            Live preview card, which renders a scoped specimen in either mode.
             The Lede sits OUTSIDE PageHeader's `subtitle` slot — that slot
             always wraps its content in the DS's own `<Text as="p">`, so a
             block-level child (Lede also renders a `<p>`) would nest a
@@ -73,15 +74,12 @@ export default async function HomePage() {
           <PageHeader
             title="{{PROJECT_NAME}}"
             actions={
-              <Stack gap="sm" align="end">
-                <Inline gap="xs" wrap justify="end">
-                  <Text variant="mono" size="sm" color="var(--color-text-secondary)">
-                    localhost:{{DEV_PORT}}
-                  </Text>
-                  <Badge size="sm">lando-ds {dsVersion}</Badge>
-                </Inline>
-                <ThemeToggle />
-              </Stack>
+              <Inline gap="xs" wrap justify="end">
+                <Text variant="mono" size="sm" color="var(--color-text-secondary)">
+                  localhost:{{DEV_PORT}}
+                </Text>
+                <Badge size="sm">lando-ds {dsVersion}</Badge>
+              </Inline>
             }
           />
           <Lede>
