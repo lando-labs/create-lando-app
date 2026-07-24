@@ -6,19 +6,27 @@
  *
  * Unlike the page-level-only model this replaces (#34), the preview does NOT
  * rely on `:root` carrying your theme — `ColorFoundation` may have `:root` on
- * the neutral slate baseline instead (see its file-level comment). Everything
- * in this card's body is wrapped in `<ThemeScope theme={theme} mode={previewMode}>`,
- * which — as of DS #11 — re-derives the tonal ramp AND the hover/active
- * interaction-state tokens against ITS OWN scoped base colours, not `:root`'s.
- * So every `var(--color-…)` read below is truthful for whatever `theme` this
- * card was handed, regardless of what the page around it is wearing. Nothing
- * in this file writes a CSS variable by hand.
+ * the neutral slate baseline instead (see its file-level comment). The WHOLE
+ * card is wrapped in `<ThemeScope theme={theme} mode={previewMode}>`, which — as
+ * of DS #11 — re-derives the tonal ramp AND the hover/active interaction-state
+ * tokens against ITS OWN scoped base colours, not `:root`'s. So every
+ * `var(--color-…)` read below is truthful for whatever `theme` this card was
+ * handed, regardless of what the page around it is wearing. Nothing in this file
+ * writes a CSS variable by hand.
  *
- * The card header carries two controls that are deliberately NOT part of the
- * scoped preview: "Preview" flips this card's own light/dark mode (via
- * `previewMode`/`onTogglePreviewMode`, independent of the page's `ThemeToggle`
- * in the hero), and "Apply to page" (via `applyToPage`/`onToggleApplyToPage`)
- * hands off to `ColorFoundation` to reskin `:root` with this same theme.
+ * The scope wraps the card rather than the card's body on purpose. `ThemeScope`
+ * is a *token* scope — it sets custom properties on its wrapper and paints no
+ * surface of its own — so anything left outside it (the card's surface, border,
+ * header and controls) would keep rendering in the PAGE's theme, and flipping
+ * the preview to dark would leave a light specimen on a dark card. Wrapping the
+ * card makes the panel swap as one unit and lets the card paint its background
+ * from this scope's `--color-surface`.
+ *
+ * The card header carries two controls: "Preview" flips this card's own
+ * light/dark mode (via `previewMode`/`onTogglePreviewMode`, independent of the
+ * page's `ThemeToggle` in the hero), and "Apply to page" (via
+ * `applyToPage`/`onToggleApplyToPage`) hands off to `ColorFoundation` to reskin
+ * `:root` with this same theme. They sit inside the scope so they swap with it.
  *
  * Delete this file when you replace the starter page.
  */
@@ -141,26 +149,33 @@ export function PalettePreview({
   onToggleApplyToPage,
 }: PalettePreviewProps) {
   return (
-    <Card variant="elevated">
-      <CardHeader
-        actions={
-          <Inline gap="md" wrap align="center">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onTogglePreviewMode}
-              aria-label="Toggle the preview's light or dark mode — independent of the page"
-            >
-              {previewMode === 'dark' ? 'Preview: ☾ Dark' : 'Preview: ☀ Light'}
-            </Button>
-            <Switch label="Apply to page" checked={applyToPage} onChange={() => onToggleApplyToPage()} />
-          </Inline>
-        }
-      >
-        <CardTitle>Live preview</CardTitle>
-      </CardHeader>
-      <CardBody>
-        <ThemeScope theme={theme} mode={previewMode}>
+    // The scope wraps the ENTIRE card, not just its body: `ThemeScope` is a
+    // *token* scope (it sets `--color-*` + `data-theme` on its wrapper and paints
+    // no surface of its own), so anything left outside it — the card's surface,
+    // border, header and controls — would keep rendering in the PAGE's theme and
+    // you'd get, say, a light specimen sitting on a dark card. Wrapping the card
+    // makes the whole panel swap as one unit, and the card then paints its
+    // background from this scope's `--color-surface`.
+    <ThemeScope theme={theme} mode={previewMode}>
+      <Card variant="elevated">
+        <CardHeader
+          actions={
+            <Inline gap="md" wrap align="center">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onTogglePreviewMode}
+                aria-label="Toggle the preview's light or dark mode — independent of the page"
+              >
+                {previewMode === 'dark' ? 'Preview: ☾ Dark' : 'Preview: ☀ Light'}
+              </Button>
+              <Switch label="Apply to page" checked={applyToPage} onChange={() => onToggleApplyToPage()} />
+            </Inline>
+          }
+        >
+          <CardTitle>Live preview</CardTitle>
+        </CardHeader>
+        <CardBody>
           <Stack gap="lg">
             {/* Roles, the surface ladder, then the brand tonal ramps — all
                 read directly off this scope, so this reference is honest
@@ -238,8 +253,8 @@ export function PalettePreview({
               </AccordionItem>
             </Accordion>
           </Stack>
-        </ThemeScope>
-      </CardBody>
-    </Card>
+        </CardBody>
+      </Card>
+    </ThemeScope>
   )
 }
