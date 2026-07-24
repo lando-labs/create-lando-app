@@ -12,10 +12,12 @@
  *
  * Delete this file when you replace the starter page.
  */
+import type { ReactNode } from 'react'
 import { Card } from '@lando-labs/lando-ds/components/Card/Card'
 import { CardHeader } from '@lando-labs/lando-ds/components/Card/CardHeader'
 import { CardTitle } from '@lando-labs/lando-ds/components/Card/CardTitle'
 import { CardBody } from '@lando-labs/lando-ds/components/Card/CardBody'
+import { Box } from '@lando-labs/lando-ds/components/Box/Box'
 import { Stack } from '@lando-labs/lando-ds/components/Stack/Stack'
 import { Inline } from '@lando-labs/lando-ds/components/Inline/Inline'
 import { Text } from '@lando-labs/lando-ds/components/Text/Text'
@@ -47,10 +49,12 @@ const SURFACE_LADDER: ReadonlyArray<{ token: string; label: string }> = [
   { token: 'text-primary', label: 'Text · primary' },
 ]
 
-const VIEW_OPTIONS: SegmentedControlOption[] = [
-  { value: 'list', label: 'List' },
-  { value: 'grid', label: 'Grid' },
-  { value: 'table', label: 'Table' },
+// Deliberately abstract labels: this is a component demo, not a real view
+// switcher — concrete labels ("List / Grid / Table") imply it does something.
+const SEGMENT_OPTIONS: SegmentedControlOption[] = [
+  { value: 'one', label: 'One' },
+  { value: 'two', label: 'Two' },
+  { value: 'three', label: 'Three' },
 ]
 
 const PLAN_OPTIONS = [
@@ -58,6 +62,20 @@ const PLAN_OPTIONS = [
   { label: 'Pro', value: 'pro' },
   { label: 'Enterprise', value: 'enterprise' },
 ]
+
+/**
+ * The DS `AccordionItem` renders its content with zero padding (it leaves
+ * insets to the consumer), so each section's body would otherwise sit flush
+ * against the trigger and the panel's left edge. Wrap every body in a padded
+ * `Box` — horizontal inset matches the trigger, plus breathing room top/bottom.
+ */
+function ItemBody({ children }: { children: ReactNode }) {
+  return (
+    <Box paddingTop="sm" paddingBottom="lg" paddingLeft="lg" paddingRight="lg">
+      <Stack gap="md">{children}</Stack>
+    </Box>
+  )
+}
 
 export function PalettePreview() {
   return (
@@ -85,20 +103,20 @@ export function PalettePreview() {
 
           <Accordion type="multiple" defaultValue={['actions']}>
             <AccordionItem value="actions" title="Actions & controls">
-              <Stack gap="md">
+              <ItemBody>
                 <Inline gap="sm" wrap>
                   <Button variant="primary">Primary</Button>
                   <Button variant="secondary">Secondary</Button>
                   <Button variant="outline">Outline</Button>
                   <Button variant="danger">Delete</Button>
                 </Inline>
-                <SegmentedControl options={VIEW_OPTIONS} defaultValue="list" />
+                <SegmentedControl options={SEGMENT_OPTIONS} defaultValue="one" />
                 <Switch label="Enable notifications" defaultChecked />
-              </Stack>
+              </ItemBody>
             </AccordionItem>
 
             <AccordionItem value="status" title="Status & feedback">
-              <Stack gap="md">
+              <ItemBody>
                 <Inline gap="xs" wrap>
                   <Badge variant="primary">Primary</Badge>
                   <Badge variant="success">Success</Badge>
@@ -113,11 +131,11 @@ export function PalettePreview() {
                 <Alert variant="error" inline title="Error">
                   Danger stays red.
                 </Alert>
-              </Stack>
+              </ItemBody>
             </AccordionItem>
 
             <AccordionItem value="forms" title="Forms & inputs">
-              <Stack gap="md">
+              <ItemBody>
                 <Input label="Email" placeholder="you@example.com" />
                 <Input
                   label="Password"
@@ -126,18 +144,18 @@ export function PalettePreview() {
                   error="Needs at least 8 characters"
                 />
                 <Select label="Plan" options={PLAN_OPTIONS} defaultValue="pro" placeholder="Choose a plan" />
-              </Stack>
+              </ItemBody>
             </AccordionItem>
 
             <AccordionItem value="accent" title="Accent in context">
-              <Stack gap="md">
+              <ItemBody>
                 <AccentSpotlight />
                 <Text size="sm" color="var(--color-text-secondary)">
                   Accent is a token for <Text as="span" weight="medium">your own</Text> components to
                   consume — nothing in the DS base reads it, which is why it gets a purpose-built demo
                   instead of a spot in the button/badge/alert galleries above.
                 </Text>
-              </Stack>
+              </ItemBody>
             </AccordionItem>
           </Accordion>
         </Stack>
