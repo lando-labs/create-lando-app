@@ -58,11 +58,7 @@ import { Select } from '@lando-labs/lando-ds/components/Select/Select'
 import { Switch } from '@lando-labs/lando-ds/components/Switch/Switch'
 import { Progress } from '@lando-labs/lando-ds/components/Progress/Progress'
 import { ColorSwatch } from '@lando-labs/lando-ds/components/ColorSwatch/ColorSwatch'
-import {
-  SegmentedControl,
-  type SegmentedControlOption,
-} from '@lando-labs/lando-ds/components/SegmentedControl/SegmentedControl'
-import { AccentSpotlight } from './AccentSpotlight'
+import { DetailCardSpecimen } from './DetailCardSpecimen'
 import type { ProductTheme } from './color'
 
 /** The surface ladder — reads the scope's `:root`-shadowing vars, so it's
@@ -88,14 +84,6 @@ const RAMP_STEPS: ReadonlyArray<{ step: string; label: string }> = [
   { step: 'darkest', label: 'Darkest' },
   { step: 'hover', label: 'Hover' },
   { step: 'active', label: 'Active' },
-]
-
-// Deliberately abstract labels: this is a component demo, not a real view
-// switcher — concrete labels ("List / Grid / Table") imply it does something.
-const SEGMENT_OPTIONS: SegmentedControlOption[] = [
-  { value: 'one', label: 'One' },
-  { value: 'two', label: 'Two' },
-  { value: 'three', label: 'Three' },
 ]
 
 const PLAN_OPTIONS = [
@@ -155,6 +143,17 @@ export function PalettePreview({
   applyToPage,
   onToggleApplyToPage,
 }: PalettePreviewProps) {
+  // `accent` is always a flat hex (only surface tokens are mode-aware — see
+  // `ThemeColor` in `./color`), but the guard keeps this honest against the
+  // type rather than asserting it. Only `primary` is overridden below: DS #11
+  // re-derives ITS ramp + hover/active from that one value, while
+  // secondary/surfaces/etc. keep falling through to the outer preview scope.
+  const accentColor = theme.tokens.color?.accent
+  const accentHex = typeof accentColor === 'string' ? accentColor : undefined
+  const accentTheme: ProductTheme | undefined = accentHex
+    ? { name: 'accent-demo', tokens: { color: { primary: accentHex } } }
+    : undefined
+
   return (
     // The scope wraps the ENTIRE card, not just its body: `ThemeScope` is a
     // *token* scope (it sets `--color-*` + `data-theme` on its wrapper and paints
@@ -205,14 +204,7 @@ export function PalettePreview({
             <Accordion type="multiple" defaultValue={['actions']}>
               <AccordionItem value="actions" title="Actions & controls">
                 <ItemBody>
-                  <Inline gap="sm" wrap>
-                    <Button variant="primary">Primary</Button>
-                    <Button variant="secondary">Secondary</Button>
-                    <Button variant="outline">Outline</Button>
-                    <Button variant="danger">Delete</Button>
-                  </Inline>
-                  <SegmentedControl options={SEGMENT_OPTIONS} defaultValue="one" />
-                  <Switch label="Enable notifications" defaultChecked />
+                  <DetailCardSpecimen />
                 </ItemBody>
               </AccordionItem>
 
@@ -250,12 +242,17 @@ export function PalettePreview({
 
               <AccordionItem value="accent" title="Accent in context">
                 <ItemBody>
-                  <AccentSpotlight />
                   <Text size="sm" color="var(--color-text-secondary)">
-                    Accent is a token for <Text as="span" weight="medium">your own</Text> components to
-                    consume — nothing in the DS base reads it, which is why it gets a purpose-built demo
-                    instead of a spot in the button/badge/alert galleries above.
+                    The same card, re-themed so your <Text as="span" weight="medium">accent</Text> drives
+                    it — accent is a brand colour reserved for your own emphasis.
                   </Text>
+                  {accentTheme ? (
+                    <ThemeScope theme={accentTheme} mode={previewMode}>
+                      <DetailCardSpecimen />
+                    </ThemeScope>
+                  ) : (
+                    <DetailCardSpecimen />
+                  )}
                 </ItemBody>
               </AccordionItem>
             </Accordion>

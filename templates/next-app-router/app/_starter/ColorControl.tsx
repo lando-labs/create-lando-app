@@ -2,9 +2,15 @@
 
 /**
  * The colour-foundation control card: pick or paste a primary, get an
- * AA-safe result and a few quick starts, dial in optional secondary/accent
- * harmony, and copy the emitted CSS. Pure controls + display — all state
- * and handlers are owned by `ColorFoundation` and passed in as props.
+ * AA-safe result and a few quick starts, and dial in optional
+ * secondary/accent harmony and surface tint. Pure controls + display — all
+ * state and handlers are owned by `ColorFoundation` and passed in as props.
+ *
+ * The generated theme's copy-paste artifact (the `CodeBlock`) lives in
+ * `ColorFoundation`, not here — see that file's "Your theme" block. It needs
+ * to render full-width below the two-column grid, not inside this card's
+ * (left) column, so it doesn't tower over the preview on desktop or sit
+ * above it on narrow screens.
  *
  * Delete this file when you replace the starter page.
  */
@@ -22,7 +28,6 @@ import { Switch } from '@lando-labs/lando-ds/components/Switch/Switch'
 import { Badge } from '@lando-labs/lando-ds/components/Badge/Badge'
 import { Alert } from '@lando-labs/lando-ds/components/Alert/Alert'
 import { ColorSwatch } from '@lando-labs/lando-ds/components/ColorSwatch/ColorSwatch'
-import { CodeBlock } from '@lando-labs/lando-ds/components/CodeBlock/CodeBlock'
 import { Divider } from '@lando-labs/lando-ds/components/Divider/Divider'
 import {
   SegmentedControl,
@@ -87,8 +92,6 @@ export interface ColorControlProps {
 
   tint: TintStrength
   onTintChange: (tint: TintStrength) => void
-
-  artifact: string
 }
 
 export function ColorControl({
@@ -111,7 +114,6 @@ export function ColorControl({
   onSecondaryDraftBlur,
   tint,
   onTintChange,
-  artifact,
 }: ColorControlProps) {
   const rampOptions: SegmentedControlOption[] = RAMP_TYPES.map((r) => {
     const preview = deriveHarmony(accessible.oklch, r.id, pinnedSecondary)
@@ -144,208 +146,161 @@ export function ColorControl({
         <CardTitle>Your colours</CardTitle>
       </CardHeader>
       <CardBody>
-        <Stack gap="lg">
-          <Stack gap="md">
-            {/* Shows the colour you chose, not the corrected one — the well and
-                hex field reflect your input; the preview reflects the safe
-                output; the "Fix contrast" button bridges the two. One visible
-                label ("Primary") governs the pair; the well carries its own
-                `aria-label` since it has no label slot of its own. */}
-            <Inline gap="md" align="end" wrap>
-              <input
-                id="primary-color-well"
-                type="color"
-                value={primaryHex}
-                onChange={(e: ChangeEvent<HTMLInputElement>) => onPickPrimary(e.target.value)}
-                aria-label="Pick primary colour"
-                style={colorInputStyle}
+        <Stack gap="md">
+          {/* Shows the colour you chose, not the corrected one — the well and
+              hex field reflect your input; the preview reflects the safe
+              output; the "Fix contrast" button bridges the two. One visible
+              label ("Primary") governs the pair; the well carries its own
+              `aria-label` since it has no label slot of its own. */}
+          <Inline gap="md" align="end" wrap>
+            <input
+              id="primary-color-well"
+              type="color"
+              value={primaryHex}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => onPickPrimary(e.target.value)}
+              aria-label="Pick primary colour"
+              style={colorInputStyle}
+            />
+            <Inline grow={1}>
+              <Input
+                id="primary-hex"
+                name="primary-hex"
+                label="Primary"
+                value={hexDraft}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => onHexDraftChange(e.target.value)}
+                onBlur={onHexDraftBlur}
+                placeholder="#4F46E5"
+                error={hexDraft && !HEX_RE.test(hexDraft) ? 'Needs a 6-digit hex, e.g. #4F46E5' : undefined}
               />
-              <Inline grow={1}>
-                <Input
-                  id="primary-hex"
-                  name="primary-hex"
-                  label="Primary"
-                  value={hexDraft}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => onHexDraftChange(e.target.value)}
-                  onBlur={onHexDraftBlur}
-                  placeholder="#4F46E5"
-                  error={hexDraft && !HEX_RE.test(hexDraft) ? 'Needs a 6-digit hex, e.g. #4F46E5' : undefined}
-                />
-              </Inline>
             </Inline>
+          </Inline>
 
-            {/* A11y feedback: quiet when it already passes, actionable when it didn't. */}
-            {accessible.corrected ? (
-              <Alert variant="warning" inline title="Contrast adjusted">
-                <Stack gap="sm">
-                  <Text size="sm">
-                    That colour didn&rsquo;t clear 4.5:1 white-text contrast, so it&rsquo;s been darkened to{' '}
-                    <Text as="span" variant="mono">
-                      {accessible.hex}
-                    </Text>{' '}
-                    ({accessible.ratioOnWhite.toFixed(2)}:1) — same hue, same chroma, just readable.
-                  </Text>
-                  <Inline>
-                    <Button size="sm" variant="outline" onClick={onApplyFix}>
-                      Fix contrast
-                    </Button>
-                  </Inline>
-                </Stack>
-              </Alert>
-            ) : (
-              <Inline>
-                <Badge variant="success" size="sm">
-                  AA ✓ {accessible.ratioOnWhite.toFixed(2)}:1 on white
-                </Badge>
-              </Inline>
-            )}
-
-            <Stack gap="xs">
-              <Text size="sm" color="var(--color-text-secondary)">
-                No colour in mind? Start here.
-              </Text>
-              <Inline gap="sm" wrap>
-                {QUICK_START.map((s) => (
-                  <Button
-                    key={s.hex}
-                    variant={primaryHex === s.hex ? 'outline' : 'ghost'}
-                    size="sm"
-                    onClick={() => onPickPrimary(s.hex)}
-                    aria-label={`Use ${s.name}`}
-                  >
-                    <ColorSwatch color={s.hex} size="sm" shape="circle" aria-label="" />
+          {/* A11y feedback: quiet when it already passes, actionable when it didn't. */}
+          {accessible.corrected ? (
+            <Alert variant="warning" inline title="Contrast adjusted">
+              <Stack gap="sm">
+                <Text size="sm">
+                  That colour didn&rsquo;t clear 4.5:1 white-text contrast, so it&rsquo;s been darkened to{' '}
+                  <Text as="span" variant="mono">
+                    {accessible.hex}
+                  </Text>{' '}
+                  ({accessible.ratioOnWhite.toFixed(2)}:1) — same hue, same chroma, just readable.
+                </Text>
+                <Inline>
+                  <Button size="sm" variant="outline" onClick={onApplyFix}>
+                    Fix contrast
                   </Button>
-                ))}
-              </Inline>
-            </Stack>
-
-            <Divider />
-
-            {/* Secondary & accent — how the derived roles relate to your
-                primary. Always visible now (was a fiddly, easy-to-miss
-                expandable); the ramp swatches preview each option inline. */}
-            <Stack gap="sm">
-              <Stack gap="2xs">
-                <Text weight="semibold" size="sm">
-                  Secondary &amp; accent
-                </Text>
-                <Text size="sm" color="var(--color-text-secondary)">
-                  How the derived roles relate to your primary.
-                </Text>
-              </Stack>
-              <SegmentedControl
-                options={rampOptions}
-                value={ramp}
-                onChange={(v) => onRampChange(v as RampType)}
-                fullWidth
-              />
-              {selectedRamp ? (
-                <Text size="sm" color="var(--color-text-secondary)">
-                  {selectedRamp.blurb}
-                </Text>
-              ) : null}
-              <Switch label="Pin a secondary colour" checked={secondaryOn} onChange={() => onToggleSecondary()} />
-              {secondaryOn ? (
-                <Inline gap="md" align="end" wrap>
-                  <input
-                    id="secondary-color-well"
-                    type="color"
-                    value={HEX_RE.test(secondaryHex) ? secondaryHex : '#0F766E'}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => onPickSecondary(e.target.value)}
-                    aria-label="Pick secondary colour"
-                    style={colorInputStyle}
-                  />
-                  <Inline grow={1}>
-                    <Input
-                      id="secondary-hex"
-                      name="secondary-hex"
-                      label="Secondary"
-                      value={secondaryDraft}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) => onSecondaryDraftChange(e.target.value)}
-                      onBlur={onSecondaryDraftBlur}
-                      placeholder="#0F766E"
-                      error={
-                        secondaryDraft && !HEX_RE.test(secondaryDraft)
-                          ? 'Needs a 6-digit hex, e.g. #0F766E'
-                          : undefined
-                      }
-                    />
-                  </Inline>
                 </Inline>
-              ) : (
-                <Text size="sm" color="var(--color-text-secondary)">
-                  Off by default — accent derives from primary alone.
-                </Text>
-              )}
-            </Stack>
-
-            <Divider />
-
-            {/* Lean the whole theme — light AND dark — toward the brand. */}
-            <Stack gap="sm">
-              <Stack gap="2xs">
-                <Text weight="semibold" size="sm">
-                  Surface tint
-                </Text>
-                <Text size="sm" color="var(--color-text-secondary)">
-                  Nudge backgrounds, surfaces and borders toward your hue.
-                </Text>
               </Stack>
-              <SegmentedControl
-                options={TINT_STRENGTHS.map((t) => ({ value: t.id, label: t.label }))}
-                value={tint}
-                onChange={(v) => onTintChange(v as TintStrength)}
-                fullWidth
-              />
-              <Text size="sm" color="var(--color-text-secondary)">
-                Same lightness in both modes, so contrast holds. Error stays red.
-              </Text>
-            </Stack>
+            </Alert>
+          ) : (
+            <Inline>
+              <Badge variant="success" size="sm">
+                AA ✓ {accessible.ratioOnWhite.toFixed(2)}:1 on white
+              </Badge>
+            </Inline>
+          )}
+
+          <Stack gap="xs">
+            <Text size="sm" color="var(--color-text-secondary)">
+              No colour in mind? Start here.
+            </Text>
+            <Inline gap="sm" wrap>
+              {QUICK_START.map((s) => (
+                <Button
+                  key={s.hex}
+                  variant={primaryHex === s.hex ? 'outline' : 'ghost'}
+                  size="sm"
+                  onClick={() => onPickPrimary(s.hex)}
+                  aria-label={`Use ${s.name}`}
+                >
+                  <ColorSwatch color={s.hex} size="sm" shape="circle" aria-label="" />
+                </Button>
+              ))}
+            </Inline>
           </Stack>
 
-          <Divider label="Your theme" />
+          <Divider />
 
+          {/* Secondary & accent — how the derived roles relate to your
+              primary. Always visible now (was a fiddly, easy-to-miss
+              expandable); the ramp swatches preview each option inline. */}
           <Stack gap="sm">
-            <Text size="sm">
-              This is a DS{' '}
-              <Text as="span" variant="mono">
-                ProductTheme
+            <Stack gap="2xs">
+              <Text weight="semibold" size="sm">
+                Secondary &amp; accent
               </Text>
-              . Save it as{' '}
-              <Text as="span" variant="mono">
-                app/brand-theme.ts
-              </Text>{' '}
-              and pass it to{' '}
-              <Text as="span" variant="mono">
-                {'<ThemeProvider defaultProductTheme={brandTheme}>'}
-              </Text>{' '}
-              in{' '}
-              <Text as="span" variant="mono">
-                app/providers.tsx
-              </Text>{' '}
-              — the DS derives every ramp and state from it. It&rsquo;s what&rsquo;s driving the
-              preview; flip <Text as="span" weight="semibold">Apply to page</Text> to see it on this
-              whole page. Saving it is what makes it stick after you delete{' '}
-              <Text as="span" variant="mono">app/_starter/</Text>.
-            </Text>
-            {accessible.corrected ? (
               <Text size="sm" color="var(--color-text-secondary)">
-                Built with the contrast-safe primary (
-                <Text as="span" variant="mono">
-                  {accessible.hex}
-                </Text>
-                ), not the colour you picked (
-                <Text as="span" variant="mono">
-                  {primaryHex}
-                </Text>
-                ). Click{' '}
-                <Text as="span" weight="semibold">
-                  Fix contrast
-                </Text>{' '}
-                above to make them match.
+                How the derived roles relate to your primary.
+              </Text>
+            </Stack>
+            <SegmentedControl
+              options={rampOptions}
+              value={ramp}
+              onChange={(v) => onRampChange(v as RampType)}
+              fullWidth
+            />
+            {selectedRamp ? (
+              <Text size="sm" color="var(--color-text-secondary)">
+                {selectedRamp.blurb}
               </Text>
             ) : null}
-            <CodeBlock code={artifact} language="tsx" title="app/brand-theme.ts" />
+            <Switch label="Pin a secondary colour" checked={secondaryOn} onChange={() => onToggleSecondary()} />
+            {secondaryOn ? (
+              <Inline gap="md" align="end" wrap>
+                <input
+                  id="secondary-color-well"
+                  type="color"
+                  value={HEX_RE.test(secondaryHex) ? secondaryHex : '#0F766E'}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => onPickSecondary(e.target.value)}
+                  aria-label="Pick secondary colour"
+                  style={colorInputStyle}
+                />
+                <Inline grow={1}>
+                  <Input
+                    id="secondary-hex"
+                    name="secondary-hex"
+                    label="Secondary"
+                    value={secondaryDraft}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => onSecondaryDraftChange(e.target.value)}
+                    onBlur={onSecondaryDraftBlur}
+                    placeholder="#0F766E"
+                    error={
+                      secondaryDraft && !HEX_RE.test(secondaryDraft)
+                        ? 'Needs a 6-digit hex, e.g. #0F766E'
+                        : undefined
+                    }
+                  />
+                </Inline>
+              </Inline>
+            ) : (
+              <Text size="sm" color="var(--color-text-secondary)">
+                Off by default — accent derives from primary alone.
+              </Text>
+            )}
+          </Stack>
+
+          <Divider />
+
+          {/* Lean the whole theme — light AND dark — toward the brand. */}
+          <Stack gap="sm">
+            <Stack gap="2xs">
+              <Text weight="semibold" size="sm">
+                Surface tint
+              </Text>
+              <Text size="sm" color="var(--color-text-secondary)">
+                Nudge backgrounds, surfaces and borders toward your hue.
+              </Text>
+            </Stack>
+            <SegmentedControl
+              options={TINT_STRENGTHS.map((t) => ({ value: t.id, label: t.label }))}
+              value={tint}
+              onChange={(v) => onTintChange(v as TintStrength)}
+              fullWidth
+            />
+            <Text size="sm" color="var(--color-text-secondary)">
+              Same lightness in both modes, so contrast holds. Error stays red.
+            </Text>
           </Stack>
         </Stack>
       </CardBody>

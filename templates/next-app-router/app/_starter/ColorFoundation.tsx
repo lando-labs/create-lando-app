@@ -4,7 +4,10 @@
  * Owns the colour-foundation state: the primary you picked, the optional
  * harmony customisation, and every value derived from them. Renders the
  * two-column workspace — controls on the left, live preview on the right —
- * via `./color`, the DS's own OKLCH + contrast maths.
+ * via `./color`, the DS's own OKLCH + contrast maths, then the "Your theme"
+ * copy-paste artifact FULL-WIDTH below both columns (its own `CodeBlock` can
+ * run tall, and putting it inside the grid would either tower over the
+ * preview on desktop or shove the preview below it on narrow screens).
  *
  * Three independent controls, three regions (DS issue #36 — supersedes the
  * page-level-only preview from #34, now that DS #11 makes a scoped
@@ -35,6 +38,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTheme, type ResolvedTheme } from '@lando-labs/lando-ds'
 import { useDisclosure, useToggle } from '@lando-labs/lando-ds/hooks'
 import { Grid } from '@lando-labs/lando-ds/components/Grid/Grid'
+import { Stack } from '@lando-labs/lando-ds/components/Stack/Stack'
+import { Text } from '@lando-labs/lando-ds/components/Text/Text'
+import { Divider } from '@lando-labs/lando-ds/components/Divider/Divider'
+import { CodeBlock } from '@lando-labs/lando-ds/components/CodeBlock/CodeBlock'
 import { QUICK_START } from './starter-data'
 import { ColorControl } from './ColorControl'
 import { PalettePreview } from './PalettePreview'
@@ -114,36 +121,85 @@ export function ColorFoundation() {
   }
 
   return (
-    <Grid columns={{ lg: 2 }} gap="var(--spacing-2xl)" align="start">
-      <ColorControl
-        primaryHex={primaryHex}
-        hexDraft={hexDraft}
-        accessible={accessible}
-        onPickPrimary={pickPrimary}
-        onHexDraftChange={commitPrimary}
-        onHexDraftBlur={() => setHexDraft(primaryHex)}
-        onApplyFix={applyFix}
-        ramp={ramp}
-        onRampChange={setRamp}
-        pinnedSecondary={pinnedSecondary}
-        secondaryOn={secondaryOn}
-        onToggleSecondary={secondaryHandlers.toggle}
-        secondaryHex={secondaryHex}
-        secondaryDraft={secondaryDraft}
-        onPickSecondary={pickSecondary}
-        onSecondaryDraftChange={commitSecondary}
-        onSecondaryDraftBlur={() => setSecondaryDraft(secondaryHex)}
-        tint={tint}
-        onTintChange={setTint}
-        artifact={artifact}
-      />
-      <PalettePreview
-        theme={theme}
-        previewMode={previewMode}
-        onTogglePreviewMode={() => cyclePreviewMode()}
-        applyToPage={applyToPage}
-        onToggleApplyToPage={() => applyToPageHandlers.toggle()}
-      />
-    </Grid>
+    // Grid rows are just [controls | preview] — the "Your theme" artifact
+    // below is full-width, outside the grid, so it can't tower over the
+    // preview column on desktop or shove it below the fold on narrow screens.
+    <Stack gap="xl">
+      <Grid columns={{ lg: 2 }} gap="var(--spacing-2xl)" align="start">
+        <ColorControl
+          primaryHex={primaryHex}
+          hexDraft={hexDraft}
+          accessible={accessible}
+          onPickPrimary={pickPrimary}
+          onHexDraftChange={commitPrimary}
+          onHexDraftBlur={() => setHexDraft(primaryHex)}
+          onApplyFix={applyFix}
+          ramp={ramp}
+          onRampChange={setRamp}
+          pinnedSecondary={pinnedSecondary}
+          secondaryOn={secondaryOn}
+          onToggleSecondary={secondaryHandlers.toggle}
+          secondaryHex={secondaryHex}
+          secondaryDraft={secondaryDraft}
+          onPickSecondary={pickSecondary}
+          onSecondaryDraftChange={commitSecondary}
+          onSecondaryDraftBlur={() => setSecondaryDraft(secondaryHex)}
+          tint={tint}
+          onTintChange={setTint}
+        />
+        <PalettePreview
+          theme={theme}
+          previewMode={previewMode}
+          onTogglePreviewMode={() => cyclePreviewMode()}
+          applyToPage={applyToPage}
+          onToggleApplyToPage={() => applyToPageHandlers.toggle()}
+        />
+      </Grid>
+
+      <Divider label="Your theme" />
+
+      <Stack gap="sm">
+        <Text size="sm">
+          This is a DS{' '}
+          <Text as="span" variant="mono">
+            ProductTheme
+          </Text>
+          . Save it as{' '}
+          <Text as="span" variant="mono">
+            app/brand-theme.ts
+          </Text>{' '}
+          and pass it to{' '}
+          <Text as="span" variant="mono">
+            {'<ThemeProvider defaultProductTheme={brandTheme}>'}
+          </Text>{' '}
+          in{' '}
+          <Text as="span" variant="mono">
+            app/providers.tsx
+          </Text>{' '}
+          — the DS derives every ramp and state from it. It&rsquo;s what&rsquo;s driving the preview;
+          flip <Text as="span" weight="semibold">Apply to page</Text> to see it on this whole page.
+          Saving it is what makes it stick after you delete{' '}
+          <Text as="span" variant="mono">app/_starter/</Text>.
+        </Text>
+        {accessible.corrected ? (
+          <Text size="sm" color="var(--color-text-secondary)">
+            Built with the contrast-safe primary (
+            <Text as="span" variant="mono">
+              {accessible.hex}
+            </Text>
+            ), not the colour you picked (
+            <Text as="span" variant="mono">
+              {primaryHex}
+            </Text>
+            ). Click{' '}
+            <Text as="span" weight="semibold">
+              Fix contrast
+            </Text>{' '}
+            above to make them match.
+          </Text>
+        ) : null}
+        <CodeBlock code={artifact} language="tsx" title="app/brand-theme.ts" />
+      </Stack>
+    </Stack>
   )
 }
