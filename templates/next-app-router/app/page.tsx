@@ -2,8 +2,8 @@
 //
 // One path, thin frame: iron out your colours, hand off to your AI. This is a
 // Server Component — it reads your AGENTS.md off disk at build time for the
-// §2 brief peek. Only the interactive parts (colour foundation, prompt copy
-// buttons) are client components, in `./_starter`.
+// handoff section's brief peek. Only the interactive parts (colour
+// foundation, prompt copy buttons) are client components, in `./_starter`.
 //
 // This page is meant to be deleted. Replace it with your app — everything it
 // shows you is either in a file you now know about, or one MCP query away.
@@ -60,7 +60,9 @@ export default async function HomePage() {
   return (
     <Container size="xl" as="main">
       <Stack gap="2xl">
-        {/* 0 — Orient. The hero: who you are and what's running.
+        {/* Intro — the hero: a stable welcome title (not the raw folder name,
+            which reads filename-y and can be long/ugly), the project name
+            demoted to a static mono Badge alongside the dev-server chrome.
             There is deliberately NO page-level light/dark toggle: the page stays
             light (see `app/providers.tsx`), and light/dark is demonstrated in the
             Live preview card, which renders a scoped specimen in either mode.
@@ -72,9 +74,18 @@ export default async function HomePage() {
             intact. */}
         <Stack gap="sm">
           <PageHeader
-            title="{{PROJECT_NAME}}"
+            title="Welcome to your Lando app"
             actions={
               <Inline gap="xs" wrap justify="end">
+                {/* Badge, not Chip — Chip is a real button with toggle
+                    semantics; this is a static label, and Badge stays
+                    rsc-safe. The DS's own mono Text nested inside keeps the
+                    project name legible without a hand-rolled font-family. */}
+                <Badge size="sm">
+                  <Text as="span" variant="mono" size="sm">
+                    {{PROJECT_NAME}}
+                  </Text>
+                </Badge>
                 <Text variant="mono" size="sm" color="var(--color-text-secondary)">
                   localhost:{{DEV_PORT}}
                 </Text>
@@ -83,17 +94,17 @@ export default async function HomePage() {
             }
           />
           <Lede>
-            Your Lando-DS app is running. Set a brand colour, then hand off to your AI — this page is
-            meant to be deleted.
+            This is a live Next.js app on the Lando Design System — pick a brand color, hand it to your
+            AI, then delete this page.
           </Lede>
         </Stack>
 
-        {/* 1 — Your palette. Iron out your colours, see them on real
-            components, copy the CSS. */}
-        <Stack gap="lg" as="section">
+        {/* Getting started with your colors — iron out your colours, see
+            them on real components, copy the CSS. */}
+        <Stack gap="lg" as="section" id="colors">
           <Stack gap="xs">
             <Heading level={2} variant="section">
-              1 · Your palette
+              Getting started with your colors
             </Heading>
             <Text color="var(--color-text-secondary)">
               Pick or paste a primary. We keep it readable, derive the rest, and show you the result on
@@ -111,10 +122,11 @@ export default async function HomePage() {
           the MCP.
         </Callout>
 
-        {/* 2 — Build with your AI. A slim brief, then the call-to-action. */}
-        <Stack gap="lg" as="section">
+        {/* Getting started with your AI — the handoff. A slim brief, then
+            the call-to-action. */}
+        <Stack gap="lg" as="section" id="handoff">
           <Heading level={2} variant="section">
-            2 · Build with your AI
+            Getting started with your AI — the handoff
           </Heading>
 
           {brief ? (
@@ -178,10 +190,13 @@ export default async function HomePage() {
 
         <Divider />
 
-        {/* 3 — Where things are. One thin file map, not a tutorial. */}
-        <Stack gap="md" as="section">
+        {/* (Advanced customization lands here in #40 — natural slot between
+            the handoff and the file map, deliberately left empty.) */}
+
+        {/* Getting to know the app. One thin file map, not a tutorial. */}
+        <Stack gap="md" as="section" id="app">
           <Heading level={2} variant="section">
-            Where things are
+            Getting to know the app
           </Heading>
           <Card>
             <CardBody>
@@ -203,7 +218,7 @@ export default async function HomePage() {
           </Card>
         </Stack>
 
-        {/* 4 — Exit. This page's success condition is its own deletion. */}
+        {/* Exit. This page's success condition is its own deletion. */}
         <Stack gap="md" as="section">
           <Divider />
           <Text size="sm" color="var(--color-text-secondary)">
