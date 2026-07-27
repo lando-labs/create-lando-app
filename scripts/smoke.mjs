@@ -175,9 +175,11 @@ async function exists(p) {
  *  2. **The engine outputs a DS `ProductTheme`** (`buildProductTheme`) — it must
  *     NOT hand-write CSS (`@layer app` / `color-mix()` / `data-theme=`); the DS
  *     derives ramps/states/surfaces from the theme.
- *  3. **The page applies the theme at `:root` via `setProductTheme`** (page-level
- *     theming, #34) so ramps/states are truthful — not injected vars, not a scoped
- *     `ThemeScope`. Accent is demonstrated on a real consumer (`var(--color-accent)`).
+ *  3. **The comparison holds (#36):** the page `:root` carries the neutral
+ *     `SLATE_BASELINE` via `setProductTheme` (or the user's theme when "apply to
+ *     page" is on), while the preview is a scoped `ThemeScope` showing the user's
+ *     theme — including the **brand tonal ramps**, which only read truthfully in a
+ *     scope since DS #11. Accent is demonstrated (`var(--color-accent)`).
  *  4. **Danger stays red** — the theme never sets an `error` colour.
  *  5. **The palette shows on real DS components**, and the brief peek reads the
  *     real `AGENTS.md`.
@@ -216,15 +218,29 @@ async function assertStarterPage(projectDir) {
     fail(`color.ts hand-writes CSS (${handRolled[0]}) — the theme must go through the DS ProductTheme, not injected CSS`)
   }
 
-  // 2c — page-level theming (#34): the starter applies the ProductTheme at the
-  // document root via `setProductTheme`, so the whole page reskins with truthful
-  // ramps/hover/active. A scoped ThemeScope can't re-derive :root ramps (DS #543),
-  // so page-level is the truthful path.
+  // 2c — the page `:root` carries a theme via `setProductTheme` (#36): the slate
+  // baseline by default, the user's theme when "apply to page" is on.
   if (!/setProductTheme/.test(starterSrc)) {
-    fail('the starter no longer applies the theme at :root via setProductTheme — page-level theming (#34) is the truthful path')
+    fail('the starter no longer drives the page `:root` via setProductTheme (#36)')
+  }
+  if (!/SLATE_BASELINE/.test(starterSrc) || !/SLATE_BASELINE/.test(color)) {
+    fail('the slate baseline is gone — the page must default to a neutral baseline so the preview reads as a change (#36)')
   }
 
-  // 2d — accent is demonstrated on a real consumer. Nothing in the DS base reads
+  // 2d — the preview is SCOPED again (#36). DS #11 makes a scoped ThemeScope
+  // re-derive the tonal ramp + interaction-state tokens, which is what lets the
+  // preview show the user's theme truthfully while the page stays on slate.
+  if (!/ThemeScope/.test(starterSrc)) {
+    fail('the preview is no longer scoped in a ThemeScope — the slate-vs-your-theme comparison depends on it (#36)')
+  }
+
+  // 2e — the brand tonal ramps are shown, read INSIDE the scope so they are the
+  // DS's real derived steps (only truthful since DS #11).
+  if (!/--color-\$\{[\w.]+\}-\$\{[\w.]+\}|--color-(primary|secondary)-(lightest|lighter|light|dark|darker|darkest)/.test(starterSrc)) {
+    fail('the brand tonal ramps are not rendered — the preview must show the derived ramp steps (#36)')
+  }
+
+  // 2f — accent is demonstrated on a real consumer. Nothing in the DS base reads
   // `--color-accent`, so a reference app must show its role explicitly.
   if (!/var\(--color-accent/.test(starterSrc)) {
     fail('accent is not demonstrated — a component must consume var(--color-accent) (#34)')
@@ -248,7 +264,7 @@ async function assertStarterPage(projectDir) {
   }
   if (/\{\{[A-Z_]+\}\}/.test(page)) fail('app/page.tsx still contains an unsubstituted {{PLACEHOLDER}}')
 
-  log('starter page ok: presets removed, engine → ProductTheme, no hand-written CSS, theme applied at :root via setProductTheme, accent demonstrated, error red')
+  log('starter page ok: presets removed, engine → ProductTheme, no hand-written CSS, slate baseline at :root, scoped ThemeScope preview + brand ramps, accent demonstrated, error red')
 }
 
 /**
