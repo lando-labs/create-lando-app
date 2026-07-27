@@ -57,6 +57,7 @@ import { Input } from '@lando-labs/lando-ds/components/Input/Input'
 import { Select } from '@lando-labs/lando-ds/components/Select/Select'
 import { Switch } from '@lando-labs/lando-ds/components/Switch/Switch'
 import { Progress } from '@lando-labs/lando-ds/components/Progress/Progress'
+import { Divider } from '@lando-labs/lando-ds/components/Divider/Divider'
 import { ColorSwatch } from '@lando-labs/lando-ds/components/ColorSwatch/ColorSwatch'
 import { DetailCardSpecimen } from './DetailCardSpecimen'
 import type { ProductTheme } from './color'
@@ -143,15 +144,23 @@ export function PalettePreview({
   applyToPage,
   onToggleApplyToPage,
 }: PalettePreviewProps) {
-  // `accent` is always a flat hex (only surface tokens are mode-aware — see
-  // `ThemeColor` in `./color`), but the guard keeps this honest against the
-  // type rather than asserting it. Only `primary` is overridden below: DS #11
-  // re-derives ITS ramp + hover/active from that one value, while
-  // secondary/surfaces/etc. keep falling through to the outer preview scope.
+  // `accent`/`secondary` are always flat hexes (only surface tokens are
+  // mode-aware — see `ThemeColor` in `./color`), but the guard keeps this
+  // honest against the type rather than asserting it. Only `primary` is
+  // overridden below: DS #11 re-derives ITS ramp + hover/active from that one
+  // value, while the rest (surfaces, the other brand role, etc.) keep falling
+  // through to the outer preview scope. Used by the "Using secondary &
+  // accent" section's Pattern 2 (ThemeScope re-skin) demos.
   const accentColor = theme.tokens.color?.accent
   const accentHex = typeof accentColor === 'string' ? accentColor : undefined
   const accentTheme: ProductTheme | undefined = accentHex
     ? { name: 'accent-demo', tokens: { color: { primary: accentHex } } }
+    : undefined
+
+  const secondaryColor = theme.tokens.color?.secondary
+  const secondaryHex = typeof secondaryColor === 'string' ? secondaryColor : undefined
+  const secondaryTheme: ProductTheme | undefined = secondaryHex
+    ? { name: 'secondary-demo', tokens: { color: { primary: secondaryHex } } }
     : undefined
 
   return (
@@ -240,19 +249,113 @@ export function PalettePreview({
                 </ItemBody>
               </AccordionItem>
 
-              <AccordionItem value="accent" title="Accent in context">
+              <AccordionItem value="brand-tokens" title="Using secondary & accent">
                 <ItemBody>
-                  <Text size="sm" color="var(--color-text-secondary)">
-                    The same card, re-themed so your <Text as="span" weight="medium">accent</Text> drives
-                    it — accent is a brand colour reserved for your own emphasis.
-                  </Text>
-                  {accentTheme ? (
-                    <ThemeScope theme={accentTheme} mode={previewMode}>
-                      <DetailCardSpecimen />
-                    </ThemeScope>
-                  ) : (
-                    <DetailCardSpecimen />
-                  )}
+                  {/* Pattern 1 — token-direct. Neither role is read by most DS
+                      components (Badge/Spinner are the rare secondary
+                      opt-ins; nothing reads accent), so on YOUR OWN
+                      components you apply the token directly — that's the
+                      idiomatic path, and it's just a DS Box/Text with a
+                      `var(--color-…)` foreground or fill. Lead with this. */}
+                  <Stack gap="sm">
+                    <Text size="sm" color="var(--color-text-secondary)">
+                      Neither <Text as="span" weight="medium">secondary</Text> nor{' '}
+                      <Text as="span" weight="medium">accent</Text> is read by most DS components —
+                      Badge and Spinner opt into secondary; nothing reads accent. On your own
+                      components, apply either token directly with{' '}
+                      <Text as="span" variant="mono" size="sm">
+                        var(--color-secondary)
+                      </Text>{' '}
+                      or{' '}
+                      <Text as="span" variant="mono" size="sm">
+                        var(--color-accent)
+                      </Text>{' '}
+                      on a DS <Text as="span" weight="medium">Box</Text> or{' '}
+                      <Text as="span" weight="medium">Text</Text>.
+                    </Text>
+
+                    <Inline gap="lg" wrap align="start">
+                      <Stack gap="xs">
+                        <Text size="sm" weight="semibold">
+                          Accent
+                        </Text>
+                        <Text size="lg" weight="semibold">
+                          Ship it{' '}
+                          <Text as="span" size="lg" weight="bold" color="var(--color-accent)">
+                            today
+                          </Text>
+                          .
+                        </Text>
+                      </Stack>
+
+                      <Stack gap="xs">
+                        <Text size="sm" weight="semibold">
+                          Secondary
+                        </Text>
+                        <Box border borderRadius="md" padding="sm">
+                          <Text as="span" size="sm" weight="semibold" color="var(--color-secondary)">
+                            Beta
+                          </Text>
+                          <Text size="sm" color="var(--color-text-secondary)">
+                            Early access — behaviour may change before general availability.
+                          </Text>
+                        </Box>
+                      </Stack>
+                    </Inline>
+                  </Stack>
+
+                  <Divider spacing="sm" />
+
+                  {/* Pattern 2 — ThemeScope re-skin. The power move, but a
+                      workaround: it hijacks `primary` inside the scope so
+                      every nested DS component (ramps, hover/active — DS
+                      #11) inherits the role truthfully. Not the everyday
+                      path — Pattern 1 above is. */}
+                  <Stack gap="sm">
+                    <Text size="sm" color="var(--color-text-secondary)">
+                      The power move: a <Text as="span" weight="medium">ThemeScope</Text> that remaps{' '}
+                      <Text as="span" variant="mono" size="sm">
+                        primary
+                      </Text>{' '}
+                      to your secondary or accent hex — every DS component inside inherits it
+                      truthfully, ramps and hover/active states included (DS #11). This hijacks{' '}
+                      <Text as="span" weight="medium">primary</Text> within the scope — a workaround,
+                      not the everyday path. Reach for the pattern above first.
+                    </Text>
+
+                    {/* Stacked, not side-by-side: `DetailCardSpecimen` is a
+                        full specimen (SegmentedControl + a 4-button row), so
+                        two of them in an `Inline` would just get squeezed
+                        rather than wrap — there's no natural min-width to
+                        trigger a wrap onto a new line. */}
+                    <Stack gap="lg">
+                      <Stack gap="xs">
+                        <Text size="sm" weight="semibold">
+                          Secondary-scoped
+                        </Text>
+                        {secondaryTheme ? (
+                          <ThemeScope theme={secondaryTheme} mode={previewMode}>
+                            <DetailCardSpecimen />
+                          </ThemeScope>
+                        ) : (
+                          <DetailCardSpecimen />
+                        )}
+                      </Stack>
+
+                      <Stack gap="xs">
+                        <Text size="sm" weight="semibold">
+                          Accent-scoped
+                        </Text>
+                        {accentTheme ? (
+                          <ThemeScope theme={accentTheme} mode={previewMode}>
+                            <DetailCardSpecimen />
+                          </ThemeScope>
+                        ) : (
+                          <DetailCardSpecimen />
+                        )}
+                      </Stack>
+                    </Stack>
+                  </Stack>
                 </ItemBody>
               </AccordionItem>
             </Accordion>

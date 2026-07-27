@@ -246,6 +246,18 @@ async function assertStarterPage(projectDir) {
     fail('accent is not demonstrated — a component must consume var(--color-accent) (#34)')
   }
 
+  // 2g — secondary gets the same token-direct treatment as accent (#38): both
+  // roles are demonstrated via `var(--color-…)` applied directly on a
+  // consumer, since most DS components don't read either. Also assert the
+  // section that hosts both patterns (token-direct + the ThemeScope re-skin
+  // workaround) is present under its current title.
+  if (!/var\(--color-secondary/.test(starterSrc)) {
+    fail('secondary is not demonstrated via a direct token read — a component must consume var(--color-secondary) (#38)')
+  }
+  if (!/Using secondary & accent/.test(starterSrc)) {
+    fail('the "Using secondary & accent" section is missing — secondary/accent must be demonstrated together (#38)')
+  }
+
   // 3 — danger stays the DS default red: the theme never sets an `error` colour.
   if (/['"]error['"]\s*:/.test(color)) {
     fail('color.ts sets an `error` colour in the theme — danger must stay the DS default red')
