@@ -9,9 +9,10 @@
 // shows you is either in a file you now know about, or one MCP query away.
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { ArrowRight, Bot } from 'lucide-react'
+import { ArrowRight, Bot, Sparkles } from 'lucide-react'
 import { Container } from '@lando-labs/lando-ds/components/Container/Container'
 import { Stack } from '@lando-labs/lando-ds/components/Stack/Stack'
+import { Grid } from '@lando-labs/lando-ds/components/Grid/Grid'
 import { Inline } from '@lando-labs/lando-ds/components/Inline/Inline'
 import { Heading } from '@lando-labs/lando-ds/components/Heading/Heading'
 import { Text } from '@lando-labs/lando-ds/components/Text/Text'
@@ -29,7 +30,13 @@ import { Divider } from '@lando-labs/lando-ds/components/Divider/Divider'
 import meta from '@lando-labs/lando-ds/meta'
 import { ColorFoundation } from './_starter/ColorFoundation'
 import { PromptRow } from './_starter/PromptRow'
-import { BRIEF_HIGHLIGHTS, FILE_MAP, PROMPTS } from './_starter/starter-data'
+import {
+  BRIEF_HIGHLIGHTS,
+  COMPOSE_PROMPTS,
+  FILE_MAP,
+  PROMPTS,
+  REFINE_PROMPTS,
+} from './_starter/starter-data'
 
 /** The brief, read from disk. Absent when scaffolded with `--no-mcp`. */
 async function readBrief(): Promise<string | null> {
@@ -190,8 +197,67 @@ export default async function HomePage() {
 
         <Divider />
 
-        {/* (Advanced customization lands here in #40 — natural slot between
-            the handoff and the file map, deliberately left empty.) */}
+        {/* Advanced customization with your AI — the human keeps steering
+            after the first build. Two cards, not one: retuning the look
+            (a theme/token change) and composing new UI (primitives assembled
+            into something higher-level) are different kinds of power, and
+            splitting them into separate cards is what keeps that distinction
+            legible. The MCP-specific claim in the Callout only appears when
+            there's a brief to back it up — same degrade pattern as #handoff. */}
+        <Stack gap="lg" as="section" id="refine">
+          <Heading level={2} variant="section">
+            Advanced customization with your AI
+          </Heading>
+
+          <Callout accent="primary" icon={<Sparkles size={16} />}>
+            You don&apos;t stop at the first build. Keep steering — retune the look or build new UI, all
+            with your AI.
+            {brief
+              ? ' It still reads this project through the MCP, so it stays accurate as you push further.'
+              : ''}
+          </Callout>
+
+          <Grid columns={{ sm: 1, md: 2 }} gap="lg">
+            <Card>
+              <CardHeader>
+                <CardTitle>Retune the look</CardTitle>
+              </CardHeader>
+              <CardBody>
+                <Stack gap="sm">
+                  <Text size="sm" color="var(--color-text-secondary)">
+                    Same components, new feel — each is a theme/token change, no rewrites.
+                  </Text>
+                  <List variant="plain" spacing="sm">
+                    {REFINE_PROMPTS.map((p) => (
+                      <PromptRow key={p} prompt={p} />
+                    ))}
+                  </List>
+                </Stack>
+              </CardBody>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Build new UI</CardTitle>
+              </CardHeader>
+              <CardBody>
+                <Stack gap="sm">
+                  <Text size="sm" color="var(--color-text-secondary)">
+                    Now compose primitives into something new — the AI assembles higher-level components
+                    from DS parts.
+                  </Text>
+                  <List variant="plain" spacing="sm">
+                    {COMPOSE_PROMPTS.map((p) => (
+                      <PromptRow key={p} prompt={p} />
+                    ))}
+                  </List>
+                </Stack>
+              </CardBody>
+            </Card>
+          </Grid>
+        </Stack>
+
+        <Divider />
 
         {/* Getting to know the app. One thin file map, not a tutorial. */}
         <Stack gap="md" as="section" id="app">
