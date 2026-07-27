@@ -45,3 +45,23 @@ export const PROMPTS: readonly string[] = [
   'Using the Lando DS, add a settings form with validation and a save action.',
   'Build an app that [your idea] — using the Lando DS.',
 ]
+
+/**
+ * §4, card 1 — retuning the look. Each prompt is a theme/token change, not a
+ * rewrite: same components, different feel.
+ */
+export const REFINE_PROMPTS: readonly string[] = [
+  'The cards feel too soft — sharpen every corner.',
+  "Bump the base text size up a notch so everything's easier to read.",
+  'Tighten it into a dense, data-heavy layout — more on screen at once.',
+  'Default the whole app to dark mode, with a light/dark toggle in the header.',
+]
+
+/**
+ * §4, card 2 — composing new UI. The AI assembles higher-level components
+ * from DS primitives rather than the DS shipping them ready-made.
+ */
+export const COMPOSE_PROMPTS: readonly string[] = [
+  'Compose a dashboard header row of stat tiles — StatCards with trend arrows and a sparkline in each.',
+  "Build a three-tier pricing section — a Card per plan, a 'Most popular' Badge, and a Button to choose each.",
+]

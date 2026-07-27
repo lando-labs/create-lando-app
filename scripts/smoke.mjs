@@ -270,6 +270,18 @@ async function assertStarterPage(projectDir) {
     }
   }
 
+  // 4b — §4 "Advanced customization with your AI" (#40): the refine section
+  // sits between the handoff and the file map, with its two titled cards
+  // (retune-the-look vs. compose-new-UI) present and reachable via `#refine`.
+  if (!/id="refine"/.test(page)) {
+    fail('the "refine" section (#40) is missing its id="refine" anchor')
+  }
+  for (const title of ['Retune the look', 'Build new UI']) {
+    if (!starterSrc.includes(title) && !page.includes(title)) {
+      fail(`the §4 card titled "${title}" is missing — advanced customization (#40) must show both cards`)
+    }
+  }
+
   // 5 — the peek reads the real file; no placeholder survives into the page.
   if (!/readFile\([\s\S]{0,80}AGENTS\.md/.test(page)) {
     fail('app/page.tsx no longer reads AGENTS.md — the brief peek would drift from the brief')
