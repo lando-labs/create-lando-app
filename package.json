@@ -31,6 +31,12 @@
     "scaffold",
     "starter"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lando-labs/create-lando-app.git"
+  },
+  "homepage": "https://github.com/lando-labs/create-lando-app#readme",
+  "bugs": "https://github.com/lando-labs/create-lando-app/issues",
   "license": "Apache-2.0",
   "publishConfig": {
     "access": "public",
