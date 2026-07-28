@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 /**
  * create-lando-app — scaffolds a Next.js app pre-wired with the Lando Labs
- * Design System. Invoked via `npm create lando-app` or `npx create-lando-app`.
+ * Design System. Invoked via `npm create @lando-labs/lando-app` or
+ * `npx @lando-labs/create-lando-app`.
  *
  * Two ways in:
- *   mkdir my-app && cd my-app && npx create-lando-app   → scaffold in place
- *   npx create-lando-app my-app                         → scaffold into ./my-app
+ *   mkdir my-app && cd my-app && npx @lando-labs/create-lando-app  → in place
+ *   npx @lando-labs/create-lando-app my-app                        → into ./my-app
  *
  * The actual scaffolding lives in `./scaffold` so the consumer smoke test can
  * reuse the identical code path (see scripts/smoke.mjs).
@@ -39,8 +40,8 @@ const HELP = `
 create-lando-app — scaffold a Next.js app wired to the Lando Labs Design System.
 
 Usage
-  npx create-lando-app            Scaffold into the current directory
-  npx create-lando-app <dir>      Scaffold into <dir>
+  npx @lando-labs/create-lando-app         Scaffold into the current directory
+  npx @lando-labs/create-lando-app <dir>   Scaffold into <dir>
 
 Options
   --force        Scaffold even if the target directory has files in it

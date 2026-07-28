@@ -1,5 +1,5 @@
 {
-  "name": "create-lando-app",
+  "name": "@lando-labs/create-lando-app",
   "version": "0.1.0",
   "description": "Scaffold a Next.js app pre-wired with the Lando Labs Design System.",
   "type": "module",
