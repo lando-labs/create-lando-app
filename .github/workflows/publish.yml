@@ -3,13 +3,21 @@ name: Publish
 # Publishes to public npmjs with SLSA provenance on tag push, and creates a
 # GitHub Release from the tag's annotated message. Triggered by pushing a
 # semver tag (v0.1.0, v0.1.1, …). The tag must match package.json exactly.
+#
+# Auth is npm TRUSTED PUBLISHING (OIDC) — no NPM_TOKEN secret. npm mints a
+# short-lived credential from this workflow's OIDC identity, which must match the
+# Trusted Publisher configured on the package (npmjs.com → create-lando-app →
+# Settings → Trusted publishing: this repo + this workflow file). The package must
+# already exist on npm before a Trusted Publisher can be configured, so the very
+# first publish was a one-off manual `npm publish` (see repo notes); every release
+# after that runs keyless here.
 
 on:
   push:
     tags:
       - 'v*.*.*'
 
-# id-token: write is REQUIRED for `npm publish --provenance`.
+# id-token: write is REQUIRED for trusted publishing (OIDC) and provenance.
 # contents: write is required to create the GitHub Release.
 permissions:
   id-token: write
@@ -29,9 +37,15 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          # Trusted publishing requires Node >= 22.14.0 AND npm >= 11.5.1.
+          node-version: '22'
           registry-url: 'https://registry.npmjs.org'
           cache: 'npm'
+
+      # Node 22's bundled npm is 10.x; trusted publishing needs >= 11.5.1, so
+      # upgrade the CLI before we publish.
+      - name: Upgrade npm to a trusted-publishing-capable version
+        run: npm install -g npm@latest
 
       - name: Verify tag matches package.json version
         run: |
@@ -62,9 +76,10 @@ jobs:
           echo "..."
           npm pack --dry-run 2>&1 | tail -5
 
-      - name: Publish to npm with provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # No NODE_AUTH_TOKEN: auth is OIDC (trusted publishing). npm exchanges this
+      # job's id-token for a short-lived publish credential, and --provenance is
+      # attested from the same OIDC identity (public repo + public package).
+      - name: Publish to npm (trusted publishing + provenance)
         run: npm publish --provenance --access public
 
       - name: Create GitHub Release from tag
