@@ -28,12 +28,15 @@
  * reskin `:root` with this same theme. They sit inside the scope so they swap
  * with it.
  *
- * This card is the ONLY place light/dark is exercised — the page itself has no
- * toggle and stays light (`app/providers.tsx`). That's deliberate: the DS only
- * renders a nested scope correctly in the light-page → dark-scope direction,
- * since dark styling is an additive `[data-theme='dark']` override with no light
- * counterpart to undo it (lando-labs/lando-ds#92). Keeping the page light means
- * this toggle always renders truthfully in both of its states.
+ * The preview's own toggle drives this scope; the page starts light
+ * (`app/providers.tsx`). When "Apply to page" is on, `ColorFoundation` also carries
+ * this mode onto `:root`, so a dark preview darkens the whole page — kept in sync,
+ * so the page is dark only while every scope on it is dark too. That sidesteps the
+ * one direction the DS still mis-renders — a light scope inside a dark page, since
+ * dark styling is an additive `[data-theme='dark']` override with no light
+ * counterpart to undo it (lando-labs/lando-ds#92) — because a light-on-dark nesting
+ * never occurs: unapplied the page is light (light-page → dark-scope, which works),
+ * and applied the page mode matches the preview's.
  *
  * Delete this file when you replace the starter page.
  */
@@ -210,6 +213,15 @@ export function PalettePreview({
               <RoleRamp role="secondary" label="Secondary ramp" />
             </Stack>
 
+            {/* The specimens sit on a `--color-background` canvas so the Surface
+                tint is visible here WITHOUT needing "Apply to page". The elevated
+                Card wrapping this preview paints `--color-surface`, which is pure
+                white in light mode (`L: 1.0` — the tint is a hue/chroma nudge at
+                fixed lightness, and nothing shows at L=1.0), so the tint only ever
+                lands on `--color-background` and the borders. Painting that
+                background behind the cards mirrors how they'd sit on the real page,
+                and makes the tint legible in both light and dark. */}
+            <Box background="var(--color-background)" borderRadius="lg" padding="sm">
             <Accordion type="multiple" defaultValue={['actions']}>
               <AccordionItem value="actions" title="Actions & controls">
                 <ItemBody>
@@ -359,6 +371,7 @@ export function PalettePreview({
                 </ItemBody>
               </AccordionItem>
             </Accordion>
+            </Box>
           </Stack>
         </CardBody>
       </Card>

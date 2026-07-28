@@ -21,16 +21,20 @@
  * - **The preview** (`PalettePreview`) always renders `theme` inside its own
  *   `<ThemeScope>`, with its own independent light/dark mode — #11 is what
  *   makes that scope's ramps and hover/active states truthful now.
- * - **The page stays light.** There is no page-level light/dark toggle;
- *   `app/providers.tsx` pins `defaultMode="light"`. Light/dark is demonstrated
- *   in the preview's own scope instead. That is deliberate: the DS renders a
- *   nested scope correctly only in the light-page → dark-scope direction (a dark
- *   page + light scope currently mis-renders — lando-labs/lando-ds#92), so
- *   keeping the page light means the preview's toggle always works.
+ * - **The page mode follows the preview WHEN applied.** The page starts light
+ *   (`app/providers.tsx` pins `defaultMode="light"`), and stays light while the
+ *   preview is just a scoped specimen. But flipping "Apply to page" also carries
+ *   the preview's own light/dark mode onto `:root` (`useTheme().setMode`), so a
+ *   dark preview darkens the whole page. This is safe against the one nested-scope
+ *   direction the DS still mis-renders (a light scope inside a dark page —
+ *   lando-labs/lando-ds#92): the page goes dark ONLY while applied + preview-dark,
+ *   and in that state every scope on the page is dark too, so a light-on-dark
+ *   nesting never occurs. Unapplied → light, and the preview's own scope only ever
+ *   runs the working light-page → dark-scope direction.
  *
- * The `setProductTheme` effect cleans up on unmount
- * (`setProductTheme(undefined)`) so this deletable starter leaves no lasting
- * `:root` or localStorage effect once you delete `app/_starter/`.
+ * The effect cleans up on unmount (`setProductTheme(undefined)` +
+ * `setMode('light')`) so this deletable starter resets `:root` and the page mode
+ * once you delete `app/_starter/`.
  *
  * Delete this file when you replace the starter page.
  */
@@ -93,11 +97,22 @@ export function ColorFoundation() {
 
   // Apply at :root — slate baseline unless "apply to page" is on. See the
   // file-level comment for the three-region state model.
-  const { setProductTheme } = useTheme()
+  const { setProductTheme, setMode } = useTheme()
   useEffect(() => {
     setProductTheme(applyToPage ? theme : SLATE_BASELINE)
-    return () => setProductTheme(undefined)
-  }, [theme, applyToPage, setProductTheme])
+    // Applying also carries the preview's OWN light/dark mode onto the page, so
+    // a dark preview darkens the whole page (not just its colours). The page
+    // mode is kept in SYNC with `previewMode`: it goes dark ONLY while applied
+    // AND the preview is dark — and in that state every scope on the page (this
+    // preview, plus the nested accent/secondary scopes) is dark too. So there's
+    // never a light scope inside a dark page, which is the one direction the DS
+    // still mis-renders (lando-labs/lando-ds#92). Off/unapplied → back to light.
+    setMode(applyToPage ? previewMode : 'light')
+    return () => {
+      setProductTheme(undefined)
+      setMode('light')
+    }
+  }, [theme, applyToPage, previewMode, setProductTheme, setMode])
 
   const commitPrimary = (value: string) => {
     setHexDraft(value)
