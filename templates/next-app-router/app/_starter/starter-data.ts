@@ -40,6 +40,21 @@ export const FILE_MAP: readonly FileMapEntry[] = [
   { path: 'AGENTS.md', owns: 'What your AI is told about this project. Yours to edit.' },
 ]
 
+export interface GoDeeperLink {
+  label: string
+  href: string
+}
+
+/**
+ * §5 "Go deeper" pointers — where to go once this page is gone, not a
+ * tutorial. The DS link is interim: the canonical docs site isn't live yet
+ * (see the `// TODO` beside its use in `app/page.tsx`).
+ */
+export const GO_DEEPER_LINKS: readonly GoDeeperLink[] = [
+  { label: 'Next.js App Router docs', href: 'https://nextjs.org/docs/app' },
+  { label: 'Lando Design System', href: 'https://github.com/lando-labs/lando-ds' },
+]
+
 export const PROMPTS: readonly string[] = [
   'Using the Lando DS, build a dashboard with metric cards and a recent-activity table.',
   'Using the Lando DS, add a settings form with validation and a save action.',

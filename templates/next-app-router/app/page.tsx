@@ -7,6 +7,8 @@
 //
 // This page is meant to be deleted. Replace it with your app — everything it
 // shows you is either in a file you now know about, or one MCP query away.
+import { Fragment } from 'react'
+import type { ReactNode } from 'react'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { ArrowRight, Bot, Sparkles } from 'lucide-react'
@@ -14,6 +16,7 @@ import { Container } from '@lando-labs/lando-ds/components/Container/Container'
 import { Stack } from '@lando-labs/lando-ds/components/Stack/Stack'
 import { Grid } from '@lando-labs/lando-ds/components/Grid/Grid'
 import { Inline } from '@lando-labs/lando-ds/components/Inline/Inline'
+import { Box } from '@lando-labs/lando-ds/components/Box/Box'
 import { Heading } from '@lando-labs/lando-ds/components/Heading/Heading'
 import { Text } from '@lando-labs/lando-ds/components/Text/Text'
 import { Lede } from '@lando-labs/lando-ds/components/ArticleCard/Lede'
@@ -27,6 +30,8 @@ import { CardBody } from '@lando-labs/lando-ds/components/Card/CardBody'
 import { List } from '@lando-labs/lando-ds/components/List/List'
 import { ListItem } from '@lando-labs/lando-ds/components/List/ListItem'
 import { Divider } from '@lando-labs/lando-ds/components/Divider/Divider'
+import { Accordion } from '@lando-labs/lando-ds/components/Accordion/Accordion'
+import { AccordionItem } from '@lando-labs/lando-ds/components/Accordion/AccordionItem'
 import meta from '@lando-labs/lando-ds/meta'
 import { ColorFoundation } from './_starter/ColorFoundation'
 import { PromptRow } from './_starter/PromptRow'
@@ -34,9 +39,38 @@ import {
   BRIEF_HIGHLIGHTS,
   COMPOSE_PROMPTS,
   FILE_MAP,
+  GO_DEEPER_LINKS,
   PROMPTS,
   REFINE_PROMPTS,
 } from './_starter/starter-data'
+
+/**
+ * The 5-part arc's quick-link nav (#41) — one row, pure anchors, zero client
+ * JS. `Text as="a"` (not `Button as="a"`) because `Button` is a DS client
+ * component (rsc-safe: no, per the MCP); a static in-page anchor doesn't need
+ * a client boundary, and `Text`'s `link` variant already supplies the
+ * link affordance (color, hover underline, focus ring) `as="a"` needs.
+ */
+const QUICK_LINKS: ReadonlyArray<{ href: string; label: string }> = [
+  { href: '#colors', label: '1 Colors' },
+  { href: '#handoff', label: '2 Hand off to AI' },
+  { href: '#refine', label: '3 Keep refining' },
+  { href: '#app', label: '4 The app' },
+]
+
+/**
+ * Padding for an `AccordionItem`'s body — the DS leaves it at zero (insets
+ * are the consumer's call), so without this the content sits flush against
+ * the trigger and the panel's edges. Same pattern as
+ * `_starter/PalettePreview.tsx`'s `ItemBody`.
+ */
+function ItemBody({ children }: { children: ReactNode }) {
+  return (
+    <Box paddingTop="sm" paddingBottom="lg" paddingLeft="lg" paddingRight="lg">
+      <Stack gap="lg">{children}</Stack>
+    </Box>
+  )
+}
 
 /** The brief, read from disk. Absent when scaffolded with `--no-mcp`. */
 async function readBrief(): Promise<string | null> {
@@ -105,6 +139,29 @@ export default async function HomePage() {
             AI, then delete this page.
           </Lede>
         </Stack>
+
+        {/* Quick-link nav (#41) — names the whole 5-part arc and jumps to
+            each step. Pure anchors: real `href="#…"` targets, no scrollspy,
+            no smooth-scroll JS. `#refine` and `#app` resolve to their
+            AccordionItem's header below — collapsed sections still land on
+            a visible target, they just don't auto-expand (by design). */}
+        <Inline as="nav" aria-label="Jump to a section" gap="xs" wrap align="baseline">
+          <Text as="span" size="sm" color="var(--color-text-secondary)">
+            Jump to:
+          </Text>
+          {QUICK_LINKS.map((link, i) => (
+            <Fragment key={link.href}>
+              {i > 0 && (
+                <Text as="span" size="sm" color="var(--color-text-secondary)" aria-hidden="true">
+                  ·
+                </Text>
+              )}
+              <Text as="a" href={link.href} variant="link" size="sm">
+                {link.label}
+              </Text>
+            </Fragment>
+          ))}
+        </Inline>
 
         {/* Getting started with your colors — iron out your colours, see
             them on real components, copy the CSS. */}
@@ -197,92 +254,129 @@ export default async function HomePage() {
 
         <Divider />
 
-        {/* Advanced customization with your AI — the human keeps steering
-            after the first build. Two cards, not one: retuning the look
-            (a theme/token change) and composing new UI (primitives assembled
-            into something higher-level) are different kinds of power, and
-            splitting them into separate cards is what keeps that distinction
-            legible. The MCP-specific claim in the Callout only appears when
-            there's a brief to back it up — same degrade pattern as #handoff. */}
-        <Stack gap="lg" as="section" id="refine">
-          <Heading level={2} variant="section">
-            Advanced customization with your AI
-          </Heading>
+        {/* Advanced customization (#refine) + getting to know the app (#app)
+            — collapsed by default (#41). These are the two sections a
+            returning visitor re-reads, not the two a first-time visitor
+            needs open — the palette and the AI handoff above stay expanded
+            for that. `type="multiple"` (not the DS default `"single"`) so
+            either — or both — can be open at once; omitting `defaultValue`
+            starts both collapsed.
 
-          <Callout accent="primary" icon={<Sparkles size={16} />}>
-            You don&apos;t stop at the first build. Keep steering — retune the look or build new UI, all
-            with your AI.
-            {brief
-              ? ' It still reads this project through the MCP, so it stays accurate as you push further.'
-              : ''}
-          </Callout>
+            `id="refine"` / `id="app"` sit on the `AccordionItem` itself
+            (forwarded to its root wrapper `div`, which contains the trigger
+            button) rather than on the content inside — that wrapper is
+            always in the DOM and visible even when collapsed, so the
+            quick-links above still land on a real, visible target. The
+            content panel underneath stays mounted at all times too (the DS
+            animates it via a height style + `aria-hidden`, it never
+            unmounts), so opening it after a jump doesn't lose scroll
+            position — and the smoke test can still assert on this markup
+            without expanding anything. */}
+        <Accordion type="multiple">
+          <AccordionItem id="refine" value="refine" title="Advanced customization with your AI">
+            <ItemBody>
+              <Callout accent="primary" icon={<Sparkles size={16} />}>
+                You don&apos;t stop at the first build. Keep steering — retune the look or build new UI,
+                all with your AI.
+                {brief
+                  ? ' It still reads this project through the MCP, so it stays accurate as you push further.'
+                  : ''}
+              </Callout>
 
-          <Grid columns={{ sm: 1, md: 2 }} gap="lg">
-            <Card>
-              <CardHeader>
-                <CardTitle>Retune the look</CardTitle>
-              </CardHeader>
-              <CardBody>
-                <Stack gap="sm">
-                  <Text size="sm" color="var(--color-text-secondary)">
-                    Same components, new feel — each is a theme/token change, no rewrites.
-                  </Text>
-                  <List variant="plain" spacing="sm">
-                    {REFINE_PROMPTS.map((p) => (
-                      <PromptRow key={p} prompt={p} />
-                    ))}
-                  </List>
-                </Stack>
-              </CardBody>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Build new UI</CardTitle>
-              </CardHeader>
-              <CardBody>
-                <Stack gap="sm">
-                  <Text size="sm" color="var(--color-text-secondary)">
-                    Now compose primitives into something new — the AI assembles higher-level components
-                    from DS parts.
-                  </Text>
-                  <List variant="plain" spacing="sm">
-                    {COMPOSE_PROMPTS.map((p) => (
-                      <PromptRow key={p} prompt={p} />
-                    ))}
-                  </List>
-                </Stack>
-              </CardBody>
-            </Card>
-          </Grid>
-        </Stack>
-
-        <Divider />
-
-        {/* Getting to know the app. One thin file map, not a tutorial. */}
-        <Stack gap="md" as="section" id="app">
-          <Heading level={2} variant="section">
-            Getting to know the app
-          </Heading>
-          <Card>
-            <CardBody>
-              <List variant="plain" spacing="md" divider>
-                {FILE_MAP.map((f) => (
-                  <ListItem key={f.path}>
-                    <Stack gap="xs">
-                      <Text as="span" variant="mono" size="sm">
-                        {f.path}
-                      </Text>
+              <Grid columns={{ sm: 1, md: 2 }} gap="lg">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Retune the look</CardTitle>
+                  </CardHeader>
+                  <CardBody>
+                    <Stack gap="sm">
                       <Text size="sm" color="var(--color-text-secondary)">
-                        {f.owns}
+                        Same components, new feel — each is a theme/token change, no rewrites.
                       </Text>
+                      <List variant="plain" spacing="sm">
+                        {REFINE_PROMPTS.map((p) => (
+                          <PromptRow key={p} prompt={p} />
+                        ))}
+                      </List>
                     </Stack>
-                  </ListItem>
-                ))}
-              </List>
-            </CardBody>
-          </Card>
-        </Stack>
+                  </CardBody>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Build new UI</CardTitle>
+                  </CardHeader>
+                  <CardBody>
+                    <Stack gap="sm">
+                      <Text size="sm" color="var(--color-text-secondary)">
+                        Now compose primitives into something new — the AI assembles higher-level
+                        components from DS parts.
+                      </Text>
+                      <List variant="plain" spacing="sm">
+                        {COMPOSE_PROMPTS.map((p) => (
+                          <PromptRow key={p} prompt={p} />
+                        ))}
+                      </List>
+                    </Stack>
+                  </CardBody>
+                </Card>
+              </Grid>
+            </ItemBody>
+          </AccordionItem>
+
+          <AccordionItem id="app" value="app" title="Getting to know the app">
+            <ItemBody>
+              <Text size="sm" color="var(--color-text-secondary)">
+                A Next.js App Router app — React 19, TypeScript strict — built on the Lando Design
+                System.
+              </Text>
+
+              <Card>
+                <CardBody>
+                  <List variant="plain" spacing="md" divider>
+                    {FILE_MAP.map((f) => (
+                      <ListItem key={f.path}>
+                        <Stack gap="xs">
+                          <Text as="span" variant="mono" size="sm">
+                            {f.path}
+                          </Text>
+                          <Text size="sm" color="var(--color-text-secondary)">
+                            {f.owns}
+                          </Text>
+                        </Stack>
+                      </ListItem>
+                    ))}
+                  </List>
+                </CardBody>
+              </Card>
+
+              <Stack gap="xs">
+                <Text size="sm" weight="semibold">
+                  Go deeper
+                </Text>
+                <List variant="plain" spacing="sm">
+                  {GO_DEEPER_LINKS.map((link) => (
+                    <ListItem key={link.href}>
+                      {/* TODO: swap the Lando Design System link for the canonical
+                          docs site once it's live — this repo is an interim
+                          stand-in (create-lando-app #41). */}
+                      <Text
+                        as="a"
+                        href={link.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        variant="link"
+                        size="sm"
+                      >
+                        {link.label}
+                      </Text>
+                    </ListItem>
+                  ))}
+                </List>
+              </Stack>
+            </ItemBody>
+          </AccordionItem>
+        </Accordion>
 
         {/* Exit. This page's success condition is its own deletion. */}
         <Stack gap="md" as="section">
