@@ -17,13 +17,34 @@ import {
 } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
+import { createRequire } from 'node:module'
+
+const require = createRequire(import.meta.url)
+
+/** The dep name that anchors DS-version tracking (see `DS_VERSION`). */
+const DS_DEP = '@lando-labs/lando-ds'
 
 /**
- * The `@lando-labs/lando-ds` version the scaffolded template pins.
- * Bumped by the DS-publish drift PR (CI), which also re-runs the consumer
- * smoke test to guard the #462 cascade-layer contract.
+ * The `@lando-labs/lando-ds` version the scaffolded template pins — read from
+ * this package's OWN `devDependencies` so **Dependabot** keeps it current with
+ * zero DS-repo overhead. When the DS publishes, Dependabot opens a PR bumping the
+ * devDep; CI (`test.yml`) re-runs the consumer smoke test, which scaffolds against
+ * the new DS and asserts the #462 cascade-layer contract — so a contract-breaking
+ * DS release turns the PR red instead of silently shipping.
+ *
+ * It's a **devDependency** on purpose: it is NOT installed for `npx
+ * create-lando-app` users (dev-only), it exists solely as Dependabot's tracking
+ * anchor and the source of the value substituted for `{{DS_VERSION}}`.
  */
-export const DS_VERSION = '^0.59.0'
+const pkg = require('../package.json') as { devDependencies?: Record<string, string> }
+const dsVersion = pkg.devDependencies?.[DS_DEP]
+if (!dsVersion) {
+  throw new Error(
+    `${DS_DEP} is missing from create-lando-app's devDependencies — DS_VERSION ` +
+      `cannot be derived. It is Dependabot's tracking anchor; do not remove it.`,
+  )
+}
+export const DS_VERSION = dsVersion
 
 /**
  * The Lando DS MCP server package the `.mcp.json` drop-in points at.
