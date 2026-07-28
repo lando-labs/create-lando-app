@@ -1,0 +1,29 @@
+version: 2
+
+# Dependabot tracks the ONE dependency this repo exists to keep current:
+# @lando-labs/lando-ds. It's a devDependency (NOT shipped to `npx create-lando-app`
+# users) whose only job is to be Dependabot's anchor — `src/scaffold.ts` reads the
+# pinned version from it and substitutes it for `{{DS_VERSION}}` in scaffolded apps.
+#
+# When the DS publishes, Dependabot opens a bump PR; CI (`test.yml`) re-runs the
+# consumer smoke test, which scaffolds against the new DS and asserts the #462
+# cascade-layer contract. A contract-breaking DS release turns that PR red instead
+# of silently shipping. Other deps still get security-update PRs automatically via
+# Dependabot's native security alerts (no `allow` listing needed).
+#
+# After a green DS-bump PR: merge it — new scaffolds now pin the new DS.
+
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    versioning-strategy: increase
+    allow:
+      - dependency-name: "@lando-labs/lando-ds"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    labels:
+      - "ds-bump"
+    open-pull-requests-limit: 3

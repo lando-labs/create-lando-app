@@ -55,19 +55,22 @@ the DS's "golden path" for coexisting with a CSS reset (DS issue #462):
 If the DS ever changes its layer names/order or CSS entry points, this template
 must be updated in lockstep. That's what the drift mechanism (below) guards.
 
-## Drift mechanism: CI push, not pull
+## Drift mechanism: Dependabot pull, smoke-gated
 
 The DS is the source of truth for the layer contract, but this repo owns the
-templates. To keep them in sync **without** manual vigilance: when the DS
-publishes a new version, its release workflow dispatches to this repo, which
-opens a PR to bump `DS_VERSION` (the constant in `src/scaffold.ts`) and
-re-run a **consumer smoke test** (scaffold the template against the new DS
-tarball → build → assert component spacing is intact). A plain version bump
-can't catch a layer-contract break; the smoke test is the real guard.
+templates. To keep them in sync **without** manual vigilance or any DS-repo
+overhead: `@lando-labs/lando-ds` is a **devDependency** here (never installed for
+`npx create-lando-app` users — it's dev-only), and `DS_VERSION` in
+`src/scaffold.ts` is **read from that devDep** rather than hardcoded.
+**Dependabot** (`.github/dependabot.yml`, scoped to just the DS) opens a bump PR
+whenever the DS publishes; CI (`test.yml`) then re-runs the **consumer smoke test**
+(scaffold the template against the new DS → build → assert component spacing is
+intact). A plain version bump can't catch a layer-contract break; the smoke test
+is the real guard — a breaking DS release turns the PR red instead of shipping.
 
-> Status: the **smoke test** (`scripts/smoke.mjs`) and the **drift receiver**
-> (`.github/workflows/ds-drift.yml`) are built and live. The DS-side dispatch step
-> is still pending in the DS repo.
+> This is **pull-based** by design: Dependabot polls npm, so the DS repo does
+> nothing. (This replaced an earlier CI-dispatch design — `ds-drift.yml` + a
+> DS-side `repository_dispatch` — whose DS half was never built.)
 
 ## Dev commands
 
