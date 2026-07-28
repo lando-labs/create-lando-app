@@ -5,8 +5,8 @@ onboarding, then it should be gone. `AGENTS.md` is the permanent brief.
 
 ## If you are an AI reading this
 
-This project was just scaffolded with `npm create lando-app` and nobody has
-worked in it yet. Do this once, then delete this file.
+This project was just scaffolded with `npm create @lando-labs/lando-app` and
+nobody has worked in it yet. Do this once, then delete this file.
 
 **1. Read `AGENTS.md` first.** It's the brief: the stack, the hard rules, and how
 theming works here. Everything below assumes it.

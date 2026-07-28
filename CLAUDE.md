@@ -3,7 +3,8 @@
 ## What this is
 
 `create-lando-app` is the free CLI scaffold for the Lando Labs Design System —
-`npm create lando-app@latest` (equivalently `npx create-lando-app`) generates a
+`npm create @lando-labs/lando-app@latest` (equivalently
+`npx @lando-labs/create-lando-app`) generates a
 Next.js App Router project that's already correctly wired to
 `@lando-labs/lando-ds`.
 
@@ -22,7 +23,7 @@ monorepo package. It publishes to public npm on its own release pipeline.
 | --- | --- | --- |
 | `~/lando-labs/lando-ds` | `@lando-labs/lando-ds` | The component library. Source of truth for the cascade-layer contract. **Public on npm** (0.58.0). (`~/lando-labs/lando-labs-design-system` is the stale pre-rename checkout.) |
 | `~/lando-labs/lando-ds-mcp` | `@lando-labs/lando-ds-mcp` | The MCP server. This repo's conventions (build, CI, publish) were modeled on it. **Public on npm** (4.0.0). The scaffolded `.mcp.json` wires it as server key `lando-ds`. |
-| `~/lando-labs/create-lando-app` *(this repo)* | `create-lando-app` | The scaffold CLI. |
+| `~/lando-labs/create-lando-app` *(this repo)* | `@lando-labs/create-lando-app` | The scaffold CLI. |
 
 ## Repo layout
 
