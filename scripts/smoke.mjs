@@ -282,6 +282,41 @@ async function assertStarterPage(projectDir) {
     }
   }
 
+  // 4c — quick-link nav (#41): a pure-anchor row naming the whole arc, one
+  // href per section (rendered via `Text as="a" href={…}`, so the literal
+  // `#target` lives in the link-data array, not as a JSX string attribute).
+  // No client JS backs it, so this is a static source check — every target
+  // must be a real in-page anchor.
+  for (const href of ["'#colors'", "'#handoff'", "'#refine'", "'#app'"]) {
+    if (!page.includes(href)) {
+      fail(`the quick-link nav (#41) is missing an anchor for ${href} — every step must be jumpable`)
+    }
+  }
+
+  // 4d — #refine/#app collapse into a single Accordion, both closed on load
+  // (#41). The palette (#colors) and handoff (#handoff) sections must stay
+  // OUT of it — collapsing those would hide the page's wow and conversion.
+  if (!/<Accordion\b/.test(page) || !/<AccordionItem\b/.test(page)) {
+    fail('the §4/§5 collapse (#41) is missing — expected an Accordion wrapping AccordionItems')
+  }
+  if (!/type=["']multiple["']/.test(page)) {
+    fail('the Accordion (#41) is not type="multiple" — #refine and #app must be independently collapsible')
+  }
+  // Both sections must still be reachable and inert until opened — the `id`
+  // belongs on each AccordionItem (its trigger stays in the DOM and visible
+  // even collapsed), not buried inside the collapsed content.
+  if (!/<AccordionItem[^>]*\bid=["']refine["']/.test(page)) {
+    fail('id="refine" is not on an AccordionItem — the quick-link would no longer land on a visible header once collapsed')
+  }
+  if (!/<AccordionItem[^>]*\bid=["']app["']/.test(page)) {
+    fail('id="app" is not on an AccordionItem — the quick-link would no longer land on a visible header once collapsed')
+  }
+  // #colors/#handoff must NOT be inside the Accordion — they stay open.
+  const accordionSpan = page.slice(page.indexOf('<Accordion'), page.lastIndexOf('</Accordion>'))
+  if (accordionSpan.includes('id="colors"') || accordionSpan.includes('id="handoff"')) {
+    fail('the palette or handoff section got pulled into the collapsed Accordion (#41) — they must stay open on load')
+  }
+
   // 5 — the peek reads the real file; no placeholder survives into the page.
   if (!/readFile\([\s\S]{0,80}AGENTS\.md/.test(page)) {
     fail('app/page.tsx no longer reads AGENTS.md — the brief peek would drift from the brief')
