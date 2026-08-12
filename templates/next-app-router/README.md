@@ -9,7 +9,15 @@ A [Next.js](https://nextjs.org) app pre-wired with the
 npm run dev
 ```
 
-Open [http://localhost:{{DEV_PORT}}](http://localhost:{{DEV_PORT}}) and edit `app/page.tsx`.
+Open [http://localhost:{{DEV_PORT}}](http://localhost:{{DEV_PORT}}). The page you
+land on hands off to your AI: open this folder in Claude Code or Cursor, pick a
+brand colour, and let your AI build your first screen — then replace
+`app/page.tsx` with it. (With the MCP wiring, on by default, your AI is
+design-system-aware out of the box.)
+
+Prefer to drive yourself? `app/page.tsx` is a getting-started page, not
+furniture — replace it with your app. The design system lives in
+`@lando-labs/lando-ds`, and `AGENTS.md` is the brief your AI reads.
 
 ### Changing the port
 
@@ -46,5 +54,8 @@ Pick a port **1024 or higher** — lower ones are privileged and will fail with
 
 ## Theming
 
-The app is wrapped in `<ThemeProvider>` (see `app/providers.tsx`). Toggle or set
-themes with the provider's hooks; the persisted choice is applied before paint.
+The app is wrapped in `<ThemeProvider>` (see `app/providers.tsx`). Pick a brand
+colour on the getting-started page to generate a DS `ProductTheme`, save it as
+`app/brand-theme.ts`, and pass it as `defaultProductTheme` — the DS derives every
+ramp, hover/active state and surface from it. The persisted mode is applied
+before paint (anti-flash).

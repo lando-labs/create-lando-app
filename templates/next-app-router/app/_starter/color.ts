@@ -255,28 +255,6 @@ export function buildProductTheme(pal: Palette, tint: TintStrength, name = 'bran
   return { name, tokens: { color } } as ProductTheme
 }
 
-// ---- Slate baseline (starter-only) ------------------------------------------
-
-/**
- * The page's neutral "clean slate" — what `:root` wears when the starter's
- * "Apply to page" toggle is OFF (see `ColorFoundation`), so a picked brand
- * colour visibly pops against it in the scoped preview instead of the page
- * ambiently wearing your theme by default.
- *
- * Built with the exact same engine as any user-picked palette —
- * `ensureAccessiblePrimary` → `buildPalette` → `buildProductTheme` — just
- * seeded with a desaturated slate (the same hex as the "Slate" quick-start
- * swatch) instead of a hue you'd actually pick as a brand colour. `'tonal'`
- * keeps secondary/accent as shades of the same near-neutral hue rather than
- * introducing an unrelated one; `tint: 'none'` leaves surfaces at the DS's
- * untinted default lightness scaffold — a clean neutral, not a "slate-tinted"
- * theme. Computed once at module load: it's a constant, not a per-render
- * derivation.
- */
-const SLATE_ACCESSIBLE = ensureAccessiblePrimary('#334155')
-const SLATE_PALETTE = buildPalette(SLATE_ACCESSIBLE.oklch, 'tonal')
-export const SLATE_BASELINE: ProductTheme = buildProductTheme(SLATE_PALETTE, 'none', 'slate')
-
 /** The copy-paste artifact: the ProductTheme as a TS constant for `providers.tsx`. */
 export function formatThemeSource(theme: ProductTheme): string {
   return `import type { ProductTheme } from '@lando-labs/lando-ds/tokens'\n\nexport const brandTheme = ${JSON.stringify(

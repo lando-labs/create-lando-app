@@ -23,9 +23,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
     // preference. Without it the DS falls back to `"system"`, so a dark-OS
     // visitor would land on a dark page. Change it to `"system"` (or wire up a
     // theme toggle) whenever you want this app to follow the OS — this is your
-    // file. The getting-started page relies on the light default: its preview
-    // renders a scoped dark specimen, and a dark page + light scope currently
-    // mis-renders in the DS (lando-labs/lando-ds#92).
+    // file. (While the getting-started page is still here, keep it `"light"`:
+    // that page previews a scoped dark specimen on a light page, the one
+    // scope direction the DS renders correctly — lando-labs/lando-ds#92. Once
+    // you've replaced the page, that constraint is gone.)
     <ThemeProvider preset="brand-neutral" defaultMode="light" /* defaultProductTheme={brandTheme} */>
       {children}
     </ThemeProvider>
