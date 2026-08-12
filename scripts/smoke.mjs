@@ -90,7 +90,7 @@ try {
     targetDir: projectDir,
     projectName: 'smoke-app',
     dsVersion: dsSpec,
-    mcp: true, // exercise the full AI wiring (.mcp.json + agent drop-in)
+    ai: ['claude', 'cursor', 'codex'], // exercise the full AI wiring
   })
 
   log('npm install …')
@@ -125,6 +125,7 @@ try {
   await assertBriefingLayer(projectDir)
   await assertStarterPage(projectDir)
   await assertMcpResolves(projectDir)
+  await assertAiSelection()
 
   console.log('\n✓ SMOKE TEST PASSED — #462 contract + AI wiring intact')
 } finally {
@@ -350,6 +351,64 @@ async function assertStarterPage(projectDir) {
   if (/\{\{[A-Z_]+\}\}/.test(page)) fail('app/page.tsx still contains an unsubstituted {{PLACEHOLDER}}')
 
   log('starter page ok: presets removed, engine → ProductTheme, no hand-written CSS, no localStorage poison (#53), scoped ThemeScope preview + brand ramps, accent demonstrated, error red, handoff sequence (#51)')
+}
+
+/**
+ * `--ai` must wire ONLY what was asked for, and the brief must not lie.
+ *
+ * Scaffold-only (no install/build), so this costs ~nothing. The failure it
+ * guards is quiet: ship a Cursor user a brief promising a Claude subagent that
+ * was never installed, and their AI hunts for a file that isn't there.
+ */
+async function assertAiSelection() {
+  log('Asserting --ai selection …')
+  const cases = [
+    { ai: ['cursor'], present: ['.cursor/mcp.json', 'AGENTS.md'], absent: ['CLAUDE.md', '.mcp.json', '.codex/config.toml'] },
+    { ai: ['claude'], present: ['.mcp.json', 'CLAUDE.md'], absent: ['.cursor/mcp.json', '.codex/config.toml'] },
+    { ai: ['codex'], present: ['.codex/config.toml', 'AGENTS.md'], absent: ['CLAUDE.md', '.mcp.json', '.cursor/mcp.json'] },
+    { ai: [], present: [], absent: ['AGENTS.md', 'CLAUDE.md', 'START_HERE.md', '.mcp.json'] },
+  ]
+
+  const dir = await mkdtemp(join(tmpdir(), 'cla-ai-'))
+  try {
+    for (const c of cases) {
+      const target = join(dir, c.ai.join('-') || 'none')
+      await scaffold({
+        templatesDir: TEMPLATES_DIR,
+        template: 'next-app-router',
+        targetDir: target,
+        projectName: 'ai-case',
+        ai: c.ai,
+      })
+      const label = `--ai ${c.ai.join(',') || 'none'}`
+      for (const f of c.present) {
+        try {
+          await access(join(target, f))
+        } catch {
+          fail(`${label} should write ${f}, but it's missing`)
+        }
+      }
+      for (const f of c.absent) {
+        let there = true
+        try {
+          await access(join(target, f))
+        } catch {
+          there = false
+        }
+        if (there) fail(`${label} wrote ${f} — it wired a tool that wasn't asked for`)
+      }
+      // The brief must not promise an agent that was never installed.
+      if (c.ai.length && !c.ai.includes('claude')) {
+        const brief = await readFile(join(target, 'AGENTS.md'), 'utf8')
+        if (/agent set up|\.claude\/agents/.test(brief)) {
+          fail(`${label} brief promises a Claude subagent that was never installed`)
+        }
+      }
+    }
+  } finally {
+    await rm(dir, { recursive: true, force: true })
+  }
+  log('ai selection ok: each tool wires only its own files; brief stays truthful')
 }
 
 /**
