@@ -175,11 +175,13 @@ async function exists(p) {
  *  2. **The engine outputs a DS `ProductTheme`** (`buildProductTheme`) — it must
  *     NOT hand-write CSS (`@layer app` / `color-mix()` / `data-theme=`); the DS
  *     derives ramps/states/surfaces from the theme.
- *  3. **The comparison holds (#36):** the page `:root` carries the neutral
- *     `SLATE_BASELINE` via `setProductTheme` (or the user's theme when "apply to
- *     page" is on), while the preview is a scoped `ThemeScope` showing the user's
- *     theme — including the **brand tonal ramps**, which only read truthfully in a
- *     scope since DS #11. Accent is demonstrated (`var(--color-accent)`).
+ *  3. **The comparison holds (#36), without poisoning storage (#53):** the page
+ *     `:root` is driven via `setProductTheme` ONLY when "apply to page" is on;
+ *     otherwise the starter persists nothing and clears any stored theme, so a
+ *     configure→reload can't shadow the app's brand theme. The preview is a
+ *     scoped `ThemeScope` showing the user's theme — including the **brand tonal
+ *     ramps**, truthful in a scope since DS #11. Accent is demonstrated
+ *     (`var(--color-accent)`).
  *  4. **Danger stays red** — the theme never sets an `error` colour.
  *  5. **The palette shows on real DS components**, and the brief peek reads the
  *     real `AGENTS.md`.
@@ -218,20 +220,26 @@ async function assertStarterPage(projectDir) {
     fail(`color.ts hand-writes CSS (${handRolled[0]}) — the theme must go through the DS ProductTheme, not injected CSS`)
   }
 
-  // 2c — the page `:root` carries a theme via `setProductTheme` (#36): the slate
-  // baseline by default, the user's theme when "apply to page" is on.
+  // 2c — the page `:root` is driven via `setProductTheme` for "apply to page",
+  // but must NOT persist a throwaway theme when it's OFF (#53). The slate
+  // baseline is gone, and the OFF path CLEARS any stored theme
+  // (`setProductTheme(undefined)`) so a configure→reload doesn't shadow
+  // app/providers.tsx's brand theme (the bug: app came up in the wrong colours).
   if (!/setProductTheme/.test(starterSrc)) {
-    fail('the starter no longer drives the page `:root` via setProductTheme (#36)')
+    fail('the starter no longer drives the page `:root` via setProductTheme')
   }
-  if (!/SLATE_BASELINE/.test(starterSrc) || !/SLATE_BASELINE/.test(color)) {
-    fail('the slate baseline is gone — the page must default to a neutral baseline so the preview reads as a change (#36)')
+  if (/SLATE_BASELINE/.test(starterSrc) || /SLATE_BASELINE/.test(color)) {
+    fail('the slate baseline still ships — #53: the starter must not persist a throwaway theme to :root (it shadows the brand theme after a reload)')
+  }
+  if (!/setProductTheme\(undefined\)/.test(starterSrc)) {
+    fail('the "apply to page = off" path no longer clears the stored theme via setProductTheme(undefined) — #53 regresses (a stale theme shadows app/providers.tsx after reload)')
   }
 
-  // 2d — the preview is SCOPED again (#36). DS #11 makes a scoped ThemeScope
-  // re-derive the tonal ramp + interaction-state tokens, which is what lets the
-  // preview show the user's theme truthfully while the page stays on slate.
+  // 2d — the preview is SCOPED (#36). DS #11 makes a scoped ThemeScope re-derive
+  // the tonal ramp + interaction-state tokens, which is what lets the preview
+  // show the user's theme truthfully without the page having to wear it.
   if (!/ThemeScope/.test(starterSrc)) {
-    fail('the preview is no longer scoped in a ThemeScope — the slate-vs-your-theme comparison depends on it (#36)')
+    fail('the preview is no longer scoped in a ThemeScope — the theme-in-a-scope preview depends on it (#36)')
   }
 
   // 2e — the brand tonal ramps are shown, read INSIDE the scope so they are the
@@ -317,13 +325,31 @@ async function assertStarterPage(projectDir) {
     fail('the palette or handoff section got pulled into the collapsed Accordion (#41) — they must stay open on load')
   }
 
+  // 4e — the handoff is a SEQUENCE, not a flat prompt list (#51): orient →
+  // theme+first-screen → keep-building. The two lead prompts must exist in the
+  // starter data AND be rendered on the page, and the three step titles present.
+  for (const name of ['ORIENT_PROMPT', 'HANDOFF_PROMPT']) {
+    if (!starterSrc.includes(name)) fail(`the handoff sequence (#51) is missing ${name} in the starter data`)
+    if (!page.includes(name)) fail(`app/page.tsx no longer renders ${name} — the handoff must lead with orient, then theme+first-screen`)
+  }
+  // The theme+first-screen prompt does the whole handoff in one paste: save
+  // brand-theme.ts, wire providers, replace the page, delete the starter.
+  for (const token of ['brand-theme.ts', 'app/_starter/', 'providers.tsx']) {
+    if (!starterSrc.includes(token)) {
+      fail(`the theme+first-screen prompt (#51) no longer mentions ${token} — it must save+wire+build+delete in one paste`)
+    }
+  }
+  for (const title of ['Orient', 'Put your theme on a real screen', 'Keep building']) {
+    if (!page.includes(title)) fail(`the handoff step "${title}" (#51) is missing — the handoff must read as an ordered sequence`)
+  }
+
   // 5 — the peek reads the real file; no placeholder survives into the page.
   if (!/readFile\([\s\S]{0,80}AGENTS\.md/.test(page)) {
     fail('app/page.tsx no longer reads AGENTS.md — the brief peek would drift from the brief')
   }
   if (/\{\{[A-Z_]+\}\}/.test(page)) fail('app/page.tsx still contains an unsubstituted {{PLACEHOLDER}}')
 
-  log('starter page ok: presets removed, engine → ProductTheme, no hand-written CSS, slate baseline at :root, scoped ThemeScope preview + brand ramps, accent demonstrated, error red')
+  log('starter page ok: presets removed, engine → ProductTheme, no hand-written CSS, no localStorage poison (#53), scoped ThemeScope preview + brand ramps, accent demonstrated, error red, handoff sequence (#51)')
 }
 
 /**
@@ -348,6 +374,16 @@ async function assertBriefingLayer(projectDir) {
   const agents = await read('AGENTS.md')
   if (!/app\/providers\.tsx/.test(agents) || !/ProductTheme/.test(agents)) {
     fail('AGENTS.md no longer points the theme rule at app/providers.tsx / ProductTheme')
+  }
+  // The brief teaches the first-handoff job (#51): build a VISIBLE first screen
+  // (replace app/page.tsx, delete app/_starter/), not just wire the theme.
+  if (!/first screen/i.test(agents) || !/app\/_starter\//.test(agents)) {
+    fail('AGENTS.md no longer teaches the first-handoff job (#51) — build a visible first screen, replacing app/page.tsx + deleting app/_starter/')
+  }
+  // And teaches the route-group pattern for app chrome (#51) so the AI stops
+  // routing around the "protected" root layout by reflex.
+  if (!/app\/\(app\)/.test(agents)) {
+    fail('AGENTS.md no longer recommends the app/(app) route group for app chrome (#51)')
   }
 
   // Pointers. CLAUDE.md must actually import the brief, not paraphrase it.
