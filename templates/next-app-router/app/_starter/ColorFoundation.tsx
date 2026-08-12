@@ -9,32 +9,36 @@
  * run tall, and putting it inside the grid would either tower over the
  * preview on desktop or shove the preview below it on narrow screens).
  *
- * Three independent controls, three regions (DS issue #36 — supersedes the
- * page-level-only preview from #34, now that DS #11 makes a scoped
- * `ThemeScope` re-derive truthful ramps/hover/active for a theme that isn't
- * on `:root`):
+ * Two independent regions (DS issue #36 — supersedes the page-level-only
+ * preview from #34, now that DS #11 makes a scoped `ThemeScope` re-derive
+ * truthful ramps/hover/active for a theme that isn't on `:root`):
  *
- * - **Page `:root`** carries `applyToPage ? theme : SLATE_BASELINE`, via
- *   `useTheme().setProductTheme`. Defaults OFF, so the page around the
- *   preview is a neutral slate baseline — a picked brand colour visibly pops
- *   against it in the preview instead of the page ambiently wearing it.
  * - **The preview** (`PalettePreview`) always renders `theme` inside its own
  *   `<ThemeScope>`, with its own independent light/dark mode — #11 is what
- *   makes that scope's ramps and hover/active states truthful now.
- * - **The page mode follows the preview WHEN applied.** The page starts light
- *   (`app/providers.tsx` pins `defaultMode="light"`), and stays light while the
- *   preview is just a scoped specimen. But flipping "Apply to page" also carries
- *   the preview's own light/dark mode onto `:root` (`useTheme().setMode`), so a
- *   dark preview darkens the whole page. This is safe against the one nested-scope
- *   direction the DS still mis-renders (a light scope inside a dark page —
- *   lando-labs/lando-ds#92): the page goes dark ONLY while applied + preview-dark,
- *   and in that state every scope on the page is dark too, so a light-on-dark
- *   nesting never occurs. Unapplied → light, and the preview's own scope only ever
- *   runs the working light-page → dark-scope direction.
+ *   makes that scope's ramps and hover/active states truthful now. This is
+ *   where a picked colour is shown, so the surrounding page doesn't need to
+ *   wear it for you to judge it.
+ * - **Page `:root`** is left ALONE by default. `useTheme().setProductTheme`
+ *   persists to `localStorage`, and its cleanup only runs on React unmount —
+ *   NOT on a browser reload — so persisting a throwaway starter theme here
+ *   would shadow `app/providers.tsx`'s `defaultProductTheme` on the next load
+ *   (that was #53: configure, reload, and the app came up in the wrong
+ *   colours). So when "Apply to page" is OFF we persist NOTHING and clear any
+ *   stored value (`setProductTheme(undefined)`), which also heals a browser
+ *   already poisoned by an older starter. The page then shows whatever
+ *   `ThemeProvider` serves: the neutral `brand-neutral` preset before you
+ *   theme, your `brandTheme` after.
+ * - **"Apply to page" is the one opt-in.** Flipping it on is the only time we
+ *   touch `:root`: it carries `theme` AND the preview's own light/dark mode
+ *   (`setMode`) onto the page, so a dark preview darkens the whole page. That
+ *   stays clear of the one nested-scope direction the DS still mis-renders (a
+ *   light scope inside a dark page — lando-labs/lando-ds#92): the page goes
+ *   dark ONLY while applied + preview-dark, and in that state every scope on
+ *   the page is dark too. Toggling back off (or reloading) clears it again.
  *
  * The effect cleans up on unmount (`setProductTheme(undefined)` +
- * `setMode('light')`) so this deletable starter resets `:root` and the page mode
- * once you delete `app/_starter/`.
+ * `setMode('light')`) so this deletable starter resets `:root` and the page
+ * mode once you delete `app/_starter/`.
  *
  * Delete this file when you replace the starter page.
  */
@@ -55,7 +59,6 @@ import {
   buildProductTheme,
   formatThemeSource,
   hexToOklch,
-  SLATE_BASELINE,
   type RampType,
   type TintStrength,
 } from './color'
@@ -76,8 +79,8 @@ export function ColorFoundation() {
   // two-value cycle; always passed explicitly to `ThemeScope`, so it's
   // SSR-stable from first paint (no `useMounted` gate needed here).
   const [previewMode, cyclePreviewMode] = useToggle<ResolvedTheme>(['light', 'dark'])
-  // Off by default: the page stays on the slate baseline until you opt in to
-  // "seeing it live".
+  // Off by default: the page is left on the ThemeProvider default until you opt
+  // in to "seeing it live" — OFF persists nothing to :root (see the effect).
   const [applyToPage, applyToPageHandlers] = useDisclosure(false)
 
   const accessible = useMemo(() => ensureAccessiblePrimary(primaryHex), [primaryHex])
@@ -95,19 +98,30 @@ export function ColorFoundation() {
   const theme = useMemo(() => buildProductTheme(palette, tint), [palette, tint])
   const artifact = useMemo(() => formatThemeSource(theme), [theme])
 
-  // Apply at :root — slate baseline unless "apply to page" is on. See the
-  // file-level comment for the three-region state model.
+  // Touch :root ONLY when "Apply to page" is on. See the file-level comment for
+  // the state model; the short version is #53: setProductTheme persists to
+  // localStorage and only cleans up on unmount (not reload), so persisting a
+  // throwaway starter theme when OFF would shadow app/providers.tsx's brand
+  // theme on the next load.
   const { setProductTheme, setMode } = useTheme()
   useEffect(() => {
-    setProductTheme(applyToPage ? theme : SLATE_BASELINE)
-    // Applying also carries the preview's OWN light/dark mode onto the page, so
-    // a dark preview darkens the whole page (not just its colours). The page
-    // mode is kept in SYNC with `previewMode`: it goes dark ONLY while applied
-    // AND the preview is dark — and in that state every scope on the page (this
-    // preview, plus the nested accent/secondary scopes) is dark too. So there's
-    // never a light scope inside a dark page, which is the one direction the DS
-    // still mis-renders (lando-labs/lando-ds#92). Off/unapplied → back to light.
-    setMode(applyToPage ? previewMode : 'light')
+    if (applyToPage) {
+      // The one persistence the user actually asked for: carry the picked
+      // theme AND the preview's own light/dark mode onto the page. Mode is kept
+      // in SYNC with `previewMode` (dark only while applied + preview-dark), so
+      // there's never a light scope inside a dark page — the one direction the
+      // DS still mis-renders (lando-labs/lando-ds#92).
+      setProductTheme(theme)
+      setMode(previewMode)
+    } else {
+      // OFF (default): persist NOTHING, and clear any stored ProductTheme so a
+      // browser poisoned by an earlier starter session heals — after you wire
+      // app/providers.tsx and reload, the page shows YOUR brand theme, not a
+      // stale starter value (#53). The page falls back to whatever
+      // ThemeProvider serves (brand-neutral before you theme, brandTheme after).
+      setProductTheme(undefined)
+      setMode('light')
+    }
     return () => {
       setProductTheme(undefined)
       setMode('light')
@@ -191,10 +205,20 @@ export function ColorFoundation() {
           <Text as="span" variant="mono">
             app/providers.tsx
           </Text>{' '}
-          — the DS derives every ramp and state from it. It&rsquo;s what&rsquo;s driving the preview;
-          flip <Text as="span" weight="semibold">Apply to page</Text> to see it on this whole page.
-          Saving it is what makes it stick after you delete{' '}
-          <Text as="span" variant="mono">app/_starter/</Text>.
+          — the DS derives every ramp and state from it.
+        </Text>
+        <Text size="sm" color="var(--color-text-secondary)">
+          This page stays neutral on purpose, so your colour pops in the preview instead of the page
+          ambiently wearing it — that&rsquo;s why saving your theme won&rsquo;t visibly change{' '}
+          <Text as="span" variant="mono">
+            this
+          </Text>{' '}
+          page. Your theme goes live the moment your first real screen replaces it. Want the full look
+          now? Flip{' '}
+          <Text as="span" weight="semibold">
+            Apply to page
+          </Text>
+          .
         </Text>
         {accessible.corrected ? (
           <Text size="sm" color="var(--color-text-secondary)">
