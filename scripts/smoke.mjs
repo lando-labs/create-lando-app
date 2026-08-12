@@ -363,10 +363,10 @@ async function assertStarterPage(projectDir) {
 async function assertAiSelection() {
   log('Asserting --ai selection …')
   const cases = [
-    { ai: ['cursor'], present: ['.cursor/mcp.json', 'AGENTS.md'], absent: ['CLAUDE.md', '.mcp.json', '.codex/config.toml'] },
-    { ai: ['claude'], present: ['.mcp.json', 'CLAUDE.md'], absent: ['.cursor/mcp.json', '.codex/config.toml'] },
-    { ai: ['codex'], present: ['.codex/config.toml', 'AGENTS.md'], absent: ['CLAUDE.md', '.mcp.json', '.cursor/mcp.json'] },
-    { ai: [], present: [], absent: ['AGENTS.md', 'CLAUDE.md', 'START_HERE.md', '.mcp.json'] },
+    { ai: ['cursor'], present: ['.cursor/mcp.json', 'AGENTS.md'], absent: ['CLAUDE.md', '.mcp.json', '.codex/config.toml', '.claude/settings.json'] },
+    { ai: ['claude'], present: ['.mcp.json', 'CLAUDE.md', '.claude/settings.json'], absent: ['.cursor/mcp.json', '.codex/config.toml'] },
+    { ai: ['codex'], present: ['.codex/config.toml', 'AGENTS.md'], absent: ['CLAUDE.md', '.mcp.json', '.cursor/mcp.json', '.claude/settings.json'] },
+    { ai: [], present: [], absent: ['AGENTS.md', 'CLAUDE.md', 'START_HERE.md', '.mcp.json', '.claude/settings.json'] },
   ]
 
   const dir = await mkdtemp(join(tmpdir(), 'cla-ai-'))
@@ -480,7 +480,18 @@ async function assertBriefingLayer(projectDir) {
   }
   if (!codex.includes(pkg)) fail('.codex/config.toml disagrees with .mcp.json — configs drifted')
 
-  log(`briefing ok: AGENTS.md + pointers; MCP wired for claude/cursor/codex → "${key}"`)
+  // The DS MCP's tools are pre-approved for Claude Code (#52): the committed
+  // .claude/settings.json must allow `mcp__<key>__*`, keyed off the SAME server
+  // key as .mcp.json (so it can't drift). The `__*` suffix is load-bearing — a
+  // bare `mcp__<key>` is an unanchored glob Claude Code ignores, so it would
+  // silently prompt on every call.
+  const settings = JSON.parse(await read('.claude/settings.json'))
+  const allow = settings.permissions?.allow ?? []
+  if (!allow.includes(`mcp__${key}__*`)) {
+    fail(`.claude/settings.json does not pre-approve mcp__${key}__* — the DS MCP would prompt on every call (#52)`)
+  }
+
+  log(`briefing ok: AGENTS.md + pointers; MCP wired for claude/cursor/codex → "${key}"; DS tools pre-approved`)
 }
 
 /**

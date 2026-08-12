@@ -223,6 +223,25 @@ async function wireAi(
     // Project MCP.
     await writeFile(join(targetDir, '.mcp.json'), mcpJson)
 
+    // Pre-approve the DS MCP's tools so design-system queries don't hit a
+    // permission prompt on every call — the friction that breaks the "just talk
+    // to your AI" flow. The `__*` suffix is REQUIRED: Claude Code reads
+    // `mcp__lando-ds__*` as "every tool from the lando-ds server", whereas a
+    // bare `mcp__lando-ds` is an unanchored glob it silently ignores. Built from
+    // MCP_SERVER_KEY so it can't drift from the server the `.mcp.json` declares.
+    // This is the COMMITTED (shared) settings file, not settings.local.json —
+    // it travels with the project. Safe by construction: committed settings only
+    // take effect once the user accepts Claude Code's workspace-trust prompt.
+    const settingsJson =
+      JSON.stringify(
+        { permissions: { allow: [`mcp__${MCP_SERVER_KEY}__*`] } },
+        null,
+        2,
+      ) + '\n'
+    const claudeDir = join(targetDir, '.claude')
+    await mkdir(claudeDir, { recursive: true })
+    await writeFile(join(claudeDir, 'settings.json'), settingsJson)
+
     // The DS-aware agent, where Claude Code discovers subagents.
     const agentSrc = join(templatesDir, SHARED_DIR, 'agents', AGENT_FILE)
     if (existsSync(agentSrc)) {
