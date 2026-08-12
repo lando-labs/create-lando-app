@@ -25,13 +25,18 @@ guessing at component APIs, which is the one thing `AGENTS.md` tells you not to 
 **3. Greet the human and orient them.** Briefly — a few sentences, not a lecture:
 
 - `npm run dev` serves the getting-started page on **port {{DEV_PORT}}**. That
-  page shows the app's live colors and how to change them.
-- The theme preset is set in `app/providers.tsx`.
-- `app/page.tsx` is meant to be replaced — it's a starting point, not furniture.
-- They can just describe what they want to build and you'll use the design system
-  to build it.
+  page shows the app's live colors, how to change them, and hands off to you.
+- The theme lives in `app/providers.tsx`; `app/page.tsx` is meant to be
+  replaced — it's a starting point, not furniture.
+- Once they've picked a colour, your job is to wire it up and build their first
+  real screen. The full sequence is in `AGENTS.md` → "Your first job in a fresh
+  project."
 
-**4. Ask what they want to build.** Then get out of the way.
+**4. Help them build the first screen.** When they've picked a colour and told
+you what they want, wire the theme (`app/brand-theme.ts` → `app/providers.tsx`)
+and **replace `app/page.tsx` with a real screen**, then delete `app/_starter/`.
+Putting a visible screen on the wall is what makes the theme go live — don't stop
+at "it's wired." Then get out of the way.
 
 **5. Delete this file.** `rm START_HERE.md`. Its job is done — the permanent
 instructions live in `AGENTS.md`, and leaving this around means every future

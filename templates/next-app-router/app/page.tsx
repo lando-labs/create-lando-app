@@ -40,6 +40,8 @@ import {
   COMPOSE_PROMPTS,
   FILE_MAP,
   GO_DEEPER_LINKS,
+  HANDOFF_PROMPT,
+  ORIENT_PROMPT,
   PROMPTS,
   REFINE_PROMPTS,
 } from './_starter/starter-data'
@@ -235,21 +237,77 @@ export default async function HomePage() {
             <Text as="span" variant="mono">
               nextjs-lando-ds
             </Text>{' '}
-            agent are already wired — and paste one:
+            agent are already wired — then walk these three moves, in order:
           </Callout>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Starter prompts</CardTitle>
-            </CardHeader>
-            <CardBody>
-              <List variant="plain" spacing="sm">
-                {PROMPTS.map((p) => (
-                  <PromptRow key={p} prompt={p} />
-                ))}
-              </List>
-            </CardBody>
-          </Card>
+          {/* The handoff is a SEQUENCE, not a flat prompt list (#51): orient the
+              AI, put your theme on a real screen (the move that makes the theme
+              go live and retires this page), then keep building. Each step is a
+              titled Card; single-prompt steps still render the prompt through a
+              List so `PromptRow`'s ListItem composes correctly. */}
+          <Stack gap="md">
+            <Card>
+              <CardHeader>
+                <CardTitle>1 · Orient your AI first</CardTitle>
+              </CardHeader>
+              <CardBody>
+                <Stack gap="sm">
+                  <Text size="sm" color="var(--color-text-secondary)">
+                    Have it read the project before it writes a line — the design system, the hard
+                    rules, and the tools wired in. Oriented AI writes far more idiomatic UI than a cold
+                    &ldquo;build me X.&rdquo;
+                  </Text>
+                  <List variant="plain" spacing="sm">
+                    <PromptRow prompt={ORIENT_PROMPT} />
+                  </List>
+                </Stack>
+              </CardBody>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>2 · Put your theme on a real screen</CardTitle>
+              </CardHeader>
+              <CardBody>
+                <Stack gap="sm">
+                  <Text size="sm" color="var(--color-text-secondary)">
+                    One paste saves your theme, wires it into{' '}
+                    <Text as="span" variant="mono">
+                      providers.tsx
+                    </Text>
+                    , and replaces this page with your first real screen — the moment your theme goes
+                    live. Edit the bracketed bits first (drop in your{' '}
+                    <Text as="span" variant="mono">
+                      Your theme
+                    </Text>{' '}
+                    code and the screen you want).
+                  </Text>
+                  <List variant="plain" spacing="sm">
+                    <PromptRow prompt={HANDOFF_PROMPT} />
+                  </List>
+                </Stack>
+              </CardBody>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>3 · Keep building</CardTitle>
+              </CardHeader>
+              <CardBody>
+                <Stack gap="sm">
+                  <Text size="sm" color="var(--color-text-secondary)">
+                    More first screens to try once you&rsquo;re rolling — or just describe what you
+                    have in mind.
+                  </Text>
+                  <List variant="plain" spacing="sm">
+                    {PROMPTS.map((p) => (
+                      <PromptRow key={p} prompt={p} />
+                    ))}
+                  </List>
+                </Stack>
+              </CardBody>
+            </Card>
+          </Stack>
         </Stack>
 
         <Divider />

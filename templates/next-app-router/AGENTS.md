@@ -12,6 +12,24 @@ A Next.js 15 App Router app (React 19, TypeScript strict) built on the **Lando
 Labs Design System** (`@lando-labs/lando-ds`). The dev server runs on
 **port {{DEV_PORT}}** (`npm run dev`).
 
+## Your first job in a fresh project
+
+If this project is freshly scaffolded — `app/page.tsx` is still the
+getting-started page and `app/_starter/` still exists — your first job on handoff
+is to get a **themed, visible screen on the wall**, not to describe one:
+
+1. **Orient first.** Read this brief and confirm the `lando-ds` MCP answers
+   before you write code. (If `START_HERE.md` exists, follow it, then delete it.)
+   An oriented AI writes far more idiomatic UI than a cold "build me X."
+2. **Wire the theme.** The human picks a colour on the getting-started page and
+   gets a DS `ProductTheme`. Save it as `app/brand-theme.ts` and pass it to
+   `<ThemeProvider defaultProductTheme={brandTheme}>` in `app/providers.tsx`.
+3. **Build a visible first screen.** Replace `app/page.tsx` with the real screen
+   they asked for, then delete `app/_starter/`. The getting-started page keeps
+   `:root` on a neutral baseline while it's mounted, so the brand theme only
+   *shows* once that page is gone — **replacing it is what makes the theme go
+   live.** Put a screen on the wall; don't just tell them it's wired.
+
 ## Use the design system, don't rebuild it
 
 The DS ships 100+ components, design tokens, theming, and icons. Before you build
@@ -67,6 +85,16 @@ reset from zeroing out DS component spacing.
 - Don't reorder the imports in `layout.tsx` or move `themeScript()` out of `<head>`.
 
 The reasoning is commented in `app/globals.css` if you need it.
+
+**What's protected here is narrow:** just the CSS import order and `themeScript()`
+in `<head>`. Everything else about `layout.tsx` — metadata, fonts, wrapping
+providers — is yours to change.
+
+For **app chrome** (a nav, sidebar, or header that wraps your pages), don't stuff
+it into the root layout. Add a **route group**: put your pages under `app/(app)/`
+with an `app/(app)/layout.tsx` that renders the chrome. The group shares one
+layout across your app's pages while leaving the root layout's CSS/theme wiring
+untouched — that's the intended pattern here, not a workaround.
 
 ## Where things are
 

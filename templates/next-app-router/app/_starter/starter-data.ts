@@ -55,6 +55,34 @@ export const GO_DEEPER_LINKS: readonly GoDeeperLink[] = [
   { label: 'Lando Design System', href: 'https://github.com/lando-labs/lando-ds' },
 ]
 
+/**
+ * The handoff is a SEQUENCE, not a flat list (#51): orient the AI, put your
+ * theme on a real screen, then keep building. Steps 1–2 are single prompts;
+ * step 3 is the menu below.
+ */
+
+/**
+ * Step 1 — orient before building. Prompting the AI to get familiar first
+ * triggers the `START_HERE.md` bootstrap on a first session (read `AGENTS.md`,
+ * find the `nextjs-lando-ds` agent + the `lando-ds` MCP), which yields far more
+ * DS-idiomatic output than a cold "build me X".
+ */
+export const ORIENT_PROMPT =
+  "Get familiar with this project first — how it's set up, the design system it uses, and the tools that are wired in. Then suggest a first screen we could build."
+
+/**
+ * Step 2 — theme + first screen in ONE paste (the fix for the "I wired up my
+ * theme and nothing changed" trap, #51). It saves the theme, wires it into
+ * `providers.tsx`, and builds the user's REAL first screen — which is what
+ * finally shows the theme live — then deletes the starter. Deleting
+ * `app/_starter/` takes the getting-started page's neutral `:root` with it, so
+ * the theme "just works" from then on. The `[paste …]` / `[dashboard / …]`
+ * brackets are fill-in-the-blanks the user edits before sending.
+ */
+export const HANDOFF_PROMPT =
+  "Here's my brand theme — save it as app/brand-theme.ts and wire it into app/providers.tsx as defaultProductTheme:\n\n[paste the \"Your theme\" code from the colours step above]\n\nThen replace this getting-started page (app/page.tsx) with my first real screen — a [dashboard / landing page / settings page] — and delete app/_starter/ and START_HERE.md when you're done."
+
+/** Step 3 — more first-screen ideas, once you're rolling. */
 export const PROMPTS: readonly string[] = [
   'Using the Lando DS, build a dashboard with metric cards and a recent-activity table.',
   'Using the Lando DS, add a settings form with validation and a save action.',
