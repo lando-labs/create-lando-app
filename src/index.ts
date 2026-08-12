@@ -210,6 +210,21 @@ async function main(): Promise<void> {
   ].filter(Boolean) as string[]
 
   p.note(steps.join('\n'), 'Next steps')
+  if (opts.mcp) {
+    // The pivot the whole scaffold exists for: this project is AI-native, and
+    // the `.mcp.json` + agent we just wrote are inert if the user never opens an
+    // AI editor. Say so at the one moment they're deciding what to do next —
+    // the getting-started page carries the rest of the handoff. Suppressed under
+    // `--no-mcp`, where none of that was wired.
+    p.note(
+      [
+        'Open the folder in Claude Code or Cursor — your AI is already wired to',
+        'the design system. Start the dev server and the page hands off: pick a',
+        'brand colour, then let your AI build your first screen.',
+      ].join('\n'),
+      'Hand off to your AI',
+    )
+  }
   p.outro('Built with the Lando Labs Design System')
 }
 
